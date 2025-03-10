@@ -53,6 +53,16 @@ DISTILL_MASK_MODES_ALL = {
     },
 }
 
+# If one is enabled, other will also be enabled
+ENFORCED_TOGETHERNESS = {
+    "left_shoulder_link": [".*left_shoulder.*link.*"],
+    "right_shoulder_link": [".*right_shoulder.*link.*"],
+    "left_shoulder_joint": [".*left_shoulder.*joint.*"],
+    "right_shoulder_joint": [".*right_shoulder.*joint.*"],
+    "root_velocity": ["root_.*velocity_*"],
+    "root_orientation": ["root_.*orientation_*"],
+}
+
 
 @configclass
 class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
@@ -68,8 +78,15 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     # Mask setup for an OH2O specialist policy as default:
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
-    distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
+    distill_mask_sparsity_randomization_enabled = True
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+
+    enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
+                           "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
+                           "left_shoulder_joint": ENFORCED_TOGETHERNESS["left_shoulder_joint"],
+                           "right_shoulder_joint": ENFORCED_TOGETHERNESS["right_shoulder_joint"],
+                           "root_velocity": ENFORCED_TOGETHERNESS["root_velocity"],
+                           "root_orientation": ENFORCED_TOGETHERNESS["root_orientation"]}
 
     # Robot geometry / actuation parameters:
     actuators = {
@@ -317,8 +334,8 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
             self.max_ref_motion_dist = 0.5
             self.add_policy_obs_noise = False
             self.resample_motions = False
-            self.distill_mask_sparsity_randomization_enabled = False
-            self.distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
+            # self.distill_mask_sparsity_randomization_enabled = False
+            # self.distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
         elif self.mode == NeuralWBCModes.DISTILL_TEST:
             self.terrain = flat_terrain
             self.events = NeuralWBCPlayEventCfg()
@@ -328,7 +345,7 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
             self.default_rfi_lim = 0.0
             self.add_policy_obs_noise = False
             self.resample_motions = False
-            self.distill_mask_sparsity_randomization_enabled = False
-            self.distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
+            # self.distill_mask_sparsity_randomization_enabled = True
+            # self.distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
         else:
             raise ValueError(f"Unsupported mode {self.mode}")

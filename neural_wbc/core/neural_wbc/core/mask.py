@@ -56,39 +56,8 @@ def create_mask(
     mask_modes: dict[str, dict[str, list[str]]],
     enable_sparsity_randomization: bool,
     device: torch.device,
+    enforced_togetherness: dict[str, dict[str, list[str]]] = None,
 ) -> torch.Tensor:
-    """
-    Create a mask where all enabled states are set to 1.
-    This mask can be used directly or multiplied with 0.5 and then be used as the probability of
-    a state being enabled.
-
-    Args:
-        mask_element_names: The name corresponding to every element in the mask.
-        mask_modes: A nested dictionary configuring which mask elements are enabled in which mode.
-            The nested dictionary takes the form `{mode_name: {body_region: [element_names]}}`
-            The `mode_name` and `body_region` can be chosen freely, they are just for documentary
-            value. The `element_names` may also use regex patterns.
-            An example configuration is:
-
-            "exbody": {
-                "upper_body": [".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
-                "lower_body": ["root.*"],
-            },
-
-            For every `mode_name`, all elements of all body regions in that mode will be enabled.
-            Most likely you want the elements specified in one body region to not
-            overlap with other body regions (the code will still work if they do overlap, but the
-            resulting trained policy may not work when the overlapping elements are disabled at test
-            time).
-
-        enable_sparsity_randomization: If enabled random elements of the mask will be disabled with
-            probability 0.5. The current randomization strategy aligns with the paper, but can be improved
-            to avoid motion ambiguity. For example, one viable strategy is to only enable the mask dropout
-            on a small portion of elements of the same body region.
-    Returns:
-        torch.Tensor: A tensor of shape (len(goal_state_names),) containing the mask.
-
-    """
     # First we do the mode masking.
     mask_length = len(mask_element_names)
     mask = torch.zeros((num_envs, mask_length), dtype=torch.bool, device=device)
@@ -118,5 +87,17 @@ def create_mask(
     if enable_sparsity_randomization:
         # Multiply by 0.5 to make it a probability.
         mask = torch.bernoulli(mask * 0.5).bool()
+
+    # Apply enforced togetherness after sparsity randomization
+    if enforced_togetherness:
+        togetherness_indices = {}
+        for key, patterns in enforced_togetherness.items():
+            indices = get_matching_indices(patterns, mask_element_names)
+            togetherness_indices[key] = torch.tensor(sorted(set(indices)), dtype=torch.long, device=device)
+
+        for indices in togetherness_indices.values():
+            # If any index in the group is enabled, enable all indices in the group
+            enabled = mask[:, indices].any(dim=1, keepdim=True)  # (num_envs, 1)
+            mask[:, indices] |= enabled  # Expand activation to all enforced indices
 
     return mask
