@@ -128,7 +128,7 @@ In the project's root directory,
 
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
-    --num_envs 10 \
+    --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl
 ```
 
@@ -141,7 +141,7 @@ The teacher policy is trained for 10000000 iterations, or until the user interru
 In the project's root directory,
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
-    --num_envs 10 \
+    --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
     --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
     --teacher_policy.checkpoint model_<iteration_number>.pt
@@ -304,7 +304,23 @@ To apply these custom settings, pass the path to your YAML file using the `--env
 option when running the script. If the YAML file contains keys that do not exist in the default
 configuration, those keys will be ignored.
 
-# Sim-to-Sim Validation
+# Validation
+The trained policy in Isaac Lab can be validated in two ways - Sim-to-Sim and Sim-to-Real.
+
+<div align="center">
+<table>
+  <tr>
+    <td><img src="docs/stable_punch.gif" width="400"/></td>
+    <td><img src="docs/stable_wave.gif" width="385"/></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="1"><em>Stable Punch - Mujoco (left) & Real Robot (right)</em></font></td>
+    <td align="center"><font size="1"><em>Stable Wave - Mujoco (left) & Real Robot (right)</em></font></td>
+  </tr>
+</table>
+</div>
+
+## Sim-to-Sim Validation
 
 We also provide a [Mujoco environment](./neural_wbc/mujoco_wrapper/) for conducting sim-to-sim validation of the trained policy.
 To run the evaluation of Sim2Sim,
@@ -317,7 +333,26 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --student_checkpoint model_<iteration_number>.pt
 ```
 
-Please be aware that the `mujoco_wrapper` only supports one environment at a time. For a reference, it will take up to `5h` to evaluate `8k` reference motions. The inference_env is designed for maximum versatility. It's also suitable for Sim2Real deployment when the user provides the real robot interface.
+Please be aware that the `mujoco_wrapper` only supports one environment at a time. For a reference, it will take up to `5h` to evaluate `8k` reference motions. The inference_env is designed for maximum versatility.
+
+## Sim-to-Real Deployment
+
+For sim-to-real validation, we provide a [Hardware environment](./neural_wbc/hw_wrappers/) for Unitree H1.
+To install the required dependencies and environment setup, please refer to the [README of sim2real deployment](./neural_wbc/hw_wrappers/README.md).
+
+To deploy the trained policy on the [Unitree H1 robot](https://unitree.com/h1),
+
+```bash
+${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/s2r_player.py \
+    --student_path neural_wbc/data/data/policy/h1:student/ \
+    --student_checkpoint model_<iteration_number>.pt \
+    --reference_motion_path neural_wbc/data/data/motions/<motion_name>.pkl \
+    --robot unitree_h1 \
+    --max_iterations 5000 \
+    --num_envs 1
+```
+
+> **_NOTE:_** The sim-to-real deployment wrapper currently only supports the Unitree H1 robot. It can be extended to other robots by implementing the corresponding hardware wrapper interface.
 
 # Developing
 
@@ -410,6 +445,7 @@ We would like to acknowledge the following projects where parts of the codes in 
 - [Mujoco Python Viewer](https://github.com/rohanpsingh/mujoco-python-viewer)
 - [RSL RL](https://github.com/leggedrobotics/rsl_rl)
 - [human2humanoid](https://github.com/LeCAR-Lab/human2humanoid)
+- [Unitree Python SDK](https://github.com/unitreerobotics/unitree_sdk2_python)
 
 [omnih2o_paper]: https://arxiv.org/abs/2406.08858
 [hover_paper]: https://arxiv.org/abs/2410.21229

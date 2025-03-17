@@ -33,6 +33,7 @@ def compute_student_observations(
     history: torch.Tensor,
     mask: torch.Tensor,
     ref_episodic_offset: torch.Tensor | None = None,
+    local_base_ang_velocity: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
     """Computes observations for a student policy."""
     obs_dict = {
@@ -40,6 +41,7 @@ def compute_student_observations(
             body_state=body_state,
             base_id=base_id,
             projected_gravity=projected_gravity,
+            local_base_ang_velocity=local_base_ang_velocity,
         ),
         "distilled_imitation": compute_distilled_imitation_observations(
             ref_motion_state=ref_motion_state,
@@ -193,14 +195,18 @@ def compute_distilled_robot_state_observation(
     body_state: BodyState,
     base_id: int,
     projected_gravity: torch.Tensor,
+    local_base_ang_velocity: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Root body state in the robot root frame."""
     # for normalization
     joint_pos = body_state.joint_pos.clone()
     joint_vel = body_state.joint_vel.clone()
 
-    base_rot = body_state.body_rot_extend[:, base_id, :].clone()
-    base_ang_vel = body_state.body_ang_vel_extend[:, base_id, :].clone()
-    local_base_ang_vel = math_utils.quat_rotate_inverse(base_rot, base_ang_vel)
+    local_base_ang_vel = local_base_ang_velocity
+
+    if local_base_ang_velocity is None:
+        local_base_ang_vel = math_utils.quat_rotate_inverse(
+            body_state.body_rot_extend[:, base_id, :], body_state.body_ang_vel_extend[:, base_id, :]
+        )
 
     return torch.cat([joint_pos, joint_vel, local_base_ang_vel, projected_gravity], dim=-1)
