@@ -47,6 +47,7 @@ class NeuralWBCRewards:
         contact_sensor: ContactSensor,
         contact_sensor_feet_ids: list,
         body_state_feet_ids: list,
+        root_ids: int,
     ):
         self._num_envs = env.num_envs
         self._device = env.device
@@ -69,6 +70,7 @@ class NeuralWBCRewards:
         self._feet_max_height_in_air = torch.zeros(
             self._num_envs, len(self.contact_sensor_feet_ids), dtype=torch.float, device=self._device
         )
+        self.root_ids = root_ids
 
     def compute_reward(
         self,
@@ -177,6 +179,26 @@ class NeuralWBCRewards:
         diff_vel = ref_body_vel - body_vel
         mean_diff_vel_squared = (diff_vel**2).mean(dim=-1).mean(dim=-1)
         return torch.exp(-mean_diff_vel_squared / self._cfg.body_vel_sigma)
+    
+    def reward_track_body_velocities_extended(
+        self,
+        body_state: BodyState,
+        ref_motion_state: ReferenceMotionState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes a reward based on the difference between the extended body's velocity and the extended reference motion's velocity.
+
+        This function is rewritten from _reward_teleop_body_vel of legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        body_vel_extend = body_state.body_lin_vel_extend
+        ref_body_vel_extend = ref_motion_state.body_lin_vel_extend
+        diff_vel = ref_body_vel_extend - body_vel_extend
+        mean_diff_vel_squared = (diff_vel**2).mean(dim=-1).mean(dim=-1)
+        return torch.exp(-mean_diff_vel_squared / self._cfg.body_vel_sigma)
 
     def reward_track_body_angular_velocities(
         self,
@@ -196,6 +218,27 @@ class NeuralWBCRewards:
         body_ang_vel = body_state.body_ang_vel
         ref_body_ang_vel = ref_motion_state.body_ang_vel
         diff_ang_vel = ref_body_ang_vel - body_ang_vel
+        mean_diff_ang_vel_squared = (diff_ang_vel**2).mean(dim=-1).mean(dim=-1)
+        return torch.exp(-mean_diff_ang_vel_squared / self._cfg.body_ang_vel_sigma)
+    
+    def reward_track_body_angular_velocities_extended(
+        self,
+        body_state: BodyState,
+        ref_motion_state: ReferenceMotionState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes a reward based on the difference between the extended body's angular velocity and the extended reference motion's angular
+        velocity.
+
+        This function is rewritten from _reward_teleop_body_ang_vel of legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        body_ang_vel_extend = body_state.body_ang_vel_extend
+        ref_body_ang_vel_extend = ref_motion_state.body_ang_vel_extend
+        diff_ang_vel = ref_body_ang_vel_extend - body_ang_vel_extend
         mean_diff_ang_vel_squared = (diff_ang_vel**2).mean(dim=-1).mean(dim=-1)
         return torch.exp(-mean_diff_ang_vel_squared / self._cfg.body_ang_vel_sigma)
 
@@ -254,6 +297,15 @@ class NeuralWBCRewards:
 
         return torch.exp(-diff_body_pos_dist_vr_key_points / self._cfg.body_pos_vr_key_points_sigma)
 
+    def reward_track_body_position_feet(self, body_state: BodyState, ref_motion_state: ReferenceMotionState, **kwargs):
+        body_pos_extend = body_state.body_pos_extend
+        ref_body_pos_extend = ref_motion_state.body_pos_extend
+
+        diff_global_body_pos = ref_body_pos_extend - body_pos_extend
+        feet_diff = diff_global_body_pos[:, self._body_state_feet_ids, :]
+        feet_dist = (feet_diff**2).mean(dim=-1).mean(dim=-1)
+        return torch.exp(-feet_dist / self._cfg.body_pos_feet_sigma)
+
     def reward_track_body_rotation(
         self,
         body_state: BodyState,
@@ -277,7 +329,31 @@ class NeuralWBCRewards:
         diff_global_body_angle_dist = (diff_global_body_angle**2).mean(dim=-1)
 
         return torch.exp(-diff_global_body_angle_dist / self._cfg.body_rot_sigma)
+        
+    def reward_track_body_rotation_extended(
+        self,
+        body_state: BodyState,
+        ref_motion_state: ReferenceMotionState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes a reward based on the difference between the extended body's rotation and the extened reference motion's rotation.
 
+        This function is rewritten from _reward_teleop_body_rotation of legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        body_rot_extend = body_state.body_rot_extend
+        ref_body_rot_extend = ref_motion_state.body_rot_extend
+
+        diff_global_body_rot = math_utils.quat_mul(ref_body_rot_extend, math_utils.quat_conjugate(body_rot_extend))
+        diff_global_body_rot_xyzw = math_utils.convert_quat(diff_global_body_rot, to="xyzw")
+        diff_global_body_angle = torch_utils.quat_to_angle_axis(diff_global_body_rot_xyzw)[0]
+        diff_global_body_angle_dist = (diff_global_body_angle**2).mean(dim=-1)
+
+        return torch.exp(-diff_global_body_angle_dist / self._cfg.body_rot_sigma)
+    
     def penalize_torques(
         self,
         articulation_data: ArticulationData,
@@ -342,6 +418,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
         """
         return torch.sum(torch.square(articulation_data.joint_vel), dim=1)
+
+    def penalize_action_changes(self, previous_actions: torch.Tensor, actions: torch.Tensor, **kwargs):
+        # Penalize changes in actions
+        return torch.sum(torch.square(previous_actions - actions), dim=1)
 
     def penalize_lower_body_action_changes(
         self,
@@ -481,6 +561,25 @@ class NeuralWBCRewards:
             torch.sum(torch.square(left_gravity[:, :2]), dim=1) ** 0.5
             + torch.sum(torch.square(right_gravity[:, :2]), dim=1) ** 0.5
         )
+    
+    def penalize_feet_heading_alignment(self, body_state: BodyState, **kwargs):
+        left_quat = body_state.body_rot[:, self._body_state_feet_ids[0]]
+        right_quat = body_state.body_rot[:, self._body_state_feet_ids[1]]
+        forward_vec = torch.tensor([1.0, 0.0, 0.0]).to(left_quat.device).repeat((left_quat.shape[0], 1))
+        base_quat = body_state.body_rot[:, self.root_ids]
+
+        forward_left_feet = math_utils.quat_apply(left_quat, forward_vec)
+        heading_left_feet = torch.atan2(forward_left_feet[:, 1], forward_left_feet[:, 0])
+        forward_right_feet = math_utils.quat_apply(right_quat, forward_vec)
+        heading_right_feet = torch.atan2(forward_right_feet[:, 1], forward_right_feet[:, 0])
+
+        root_forward = math_utils.quat_apply(base_quat, forward_vec)
+        heading_root = torch.atan2(root_forward[:, 1], root_forward[:, 0])
+
+        heading_diff_left = torch.abs(math_utils.wrap_to_pi(heading_left_feet - heading_root))
+        heading_diff_right = torch.abs(math_utils.wrap_to_pi(heading_right_feet - heading_root))
+        
+        return heading_diff_left + heading_diff_right
 
     def penalize_feet_air_time(self, ref_motion_state: ReferenceMotionState, **kwargs):
         """
@@ -577,3 +676,72 @@ class NeuralWBCRewards:
             torch.Tensor: A boolean tensor of shape (num_envs, num_feet_body_parts)
         """
         return self.contact_sensor.compute_first_contact(self._dt)[:, self.contact_sensor_feet_ids]
+
+class NeuralWBCRewards_G1(NeuralWBCRewards):
+    def __init__(self, env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids):
+        super().__init__(env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids)
+
+    def reward_track_body_position_extended(
+        self,
+        body_state: BodyState,
+        ref_motion_state: ReferenceMotionState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes a reward based on the difference between the body's extended position and the reference motion's
+        extended position.
+
+        This function is rewritten from _reward_teleop_body_position_extend of legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        body_pos_extend = body_state.body_pos_extend
+        ref_body_pos_extend = ref_motion_state.body_pos_extend
+
+        diff_global_body_pos = ref_body_pos_extend - body_pos_extend
+        diff_global_body_pos_lower = diff_global_body_pos[:, :16]
+        diff_global_body_pos_upper = diff_global_body_pos[:, 16:]
+        diff_body_pos_dist_lower = (diff_global_body_pos_lower**2).mean(dim=-1).mean(dim=-1)
+        diff_body_pos_dist_upper = (diff_global_body_pos_upper**2).mean(dim=-1).mean(dim=-1)
+        r_body_pos_lower = torch.exp(-diff_body_pos_dist_lower / self._cfg.body_pos_lower_body_sigma)
+        r_body_pos_upper = torch.exp(-diff_body_pos_dist_upper / self._cfg.body_pos_upper_body_sigma)
+
+        return (
+            r_body_pos_lower * self._cfg.body_pos_lower_body_weight
+            + r_body_pos_upper * self._cfg.body_pos_upper_body_weight
+        )
+    
+    def penalize_lower_body_action_changes(
+        self,
+        previous_actions: torch.Tensor,
+        actions: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty for action changes in the lower body.
+
+        This function is adapted from _reward_lower_action_rate in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        # Joints 0 - 14 are lower body joints in Isaac Gym.
+        return torch.sum(torch.square(previous_actions[:, :15] - actions[:, :15]), dim=1)
+
+    def penalize_upper_body_action_changes(
+        self,
+        previous_actions: torch.Tensor,
+        actions: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty for action changes in the upper body.
+
+        This function is adapted from _reward_upper_action_rate in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        # Joints 15 - 22 are upper body joints in Isaac Gym.
+        return torch.sum(torch.square(previous_actions[:, 15:] - actions[:, 15:]), dim=1)

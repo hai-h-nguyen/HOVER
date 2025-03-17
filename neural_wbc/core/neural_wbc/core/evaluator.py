@@ -82,11 +82,12 @@ class Episode:
         max_possible_envs = len(self.max_frames_per_env)
         for attr in vars(frame):
             frame_data = getattr(frame, attr)
-            data_shape = frame_data.shape
-            if isinstance(frame_data, torch.Tensor):
-                self._frames[attr] = torch.zeros(
-                    (max_possible_frames, max_possible_envs, *data_shape[1:]), device=frame_data.device
-                )
+            if frame_data is not None:
+                data_shape = frame_data.shape
+                if isinstance(frame_data, torch.Tensor):
+                    self._frames[attr] = torch.zeros(
+                        (max_possible_frames, max_possible_envs, *data_shape[1:]), device=frame_data.device
+                    )
 
     @property
     def num_envs(self) -> int:
@@ -234,12 +235,12 @@ class MotionTrackingMetrics:
             storage=storage,
             frame_weights=frame_weights,
         )
-        if episode.body_pos_masked and episode_gt.body_pos_masked:
-            self._compute_link_metrics(
-                body_pos=episode.body_pos_masked,
-                body_pos_gt=episode_gt.body_pos_masked,
-                storage=masked_storage,
-            )
+        # if episode.body_pos_masked and episode_gt.body_pos_masked:
+        #     self._compute_link_metrics(
+        #         body_pos=episode.body_pos_masked,
+        #         body_pos_gt=episode_gt.body_pos_masked,
+        #         storage=masked_storage,
+        #     )
 
     def _compute_link_metrics(
         self,
@@ -249,8 +250,8 @@ class MotionTrackingMetrics:
     ):
         """Compute metrics of trajectories and save them by their means and number of elements (as weights)."""
         # compute_metrics_lite expects list of numpy arrays
-        body_pos_np = [body_pos_i.numpy() for body_pos_i in body_pos]
-        body_pos_gt_np = [body_pos_gt_i.numpy() for body_pos_gt_i in body_pos_gt]
+        body_pos_np = [body_pos_i.cpu().numpy() for body_pos_i in body_pos]
+        body_pos_gt_np = [body_pos_gt_i.cpu().numpy() for body_pos_gt_i in body_pos_gt]
         metrics = compute_metrics_lite(body_pos_np, body_pos_gt_np)
         for key, value in metrics.items():
             self._record_metrics(key, np.mean(value).item(), value.size, storage)
@@ -619,10 +620,18 @@ class Evaluator:
         Returns:
             Frame: A Frame object containing the processed trajectory data.
         """
-        if torch.any(mask):
-            data["body_pos_masked"] = data["body_pos"][mask].reshape(num_envs, -1, 3)
-        else:
-            data["body_pos_masked"] = None
+        # if torch.any(mask):
+        #     # breakpoint()
+        #     # mask: 10, 23, 3
+        #     # data["body_pos"]: 10, 23, 3
+        #     print(mask.shape)
+        #     print(data["body_pos"].shape)
+        #     print(data["body_pos"][mask].shape)
+        #     print("-----------------")
+
+        #     data["body_pos_masked"] = data["body_pos"][mask].reshape(num_envs, -1, 3)
+        # else:
+        #     data["body_pos_masked"] = None
 
         joint_pos = data.pop("joint_pos")
         data["upper_body_joint_pos"] = joint_pos[:, upper_joint_ids]

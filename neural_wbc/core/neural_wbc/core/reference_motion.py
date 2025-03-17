@@ -19,6 +19,7 @@ from typing import List
 
 # TODO: Replace MotionLibH1 with the agnostic version when it's ready.
 from phc.utils.motion_lib_h1 import MotionLibH1
+from phc.utils.motion_lib_g1 import MotionLibG1
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 
 
@@ -71,6 +72,7 @@ class ReferenceMotionState:
 
 @dataclass
 class ReferenceMotionManagerCfg:
+    robot_name: str
     motion_path: str
     skeleton_path: str
 
@@ -102,15 +104,28 @@ class ReferenceMotionManager:
         self._num_envs = num_envs
         self._dt = dt
 
-        self._motion_lib = MotionLibH1(
-            motion_file=cfg.motion_path,
-            mjcf_file=cfg.skeleton_path,
-            device=self._device,
-            masterfoot_conifg=None,
-            fix_height=False,
-            multi_thread=False,
-            extend_head=extend_head,
-        )
+        if cfg.robot_name == "h1":
+            self._motion_lib = MotionLibH1(
+                motion_file=cfg.motion_path,
+                device=self._device,
+                num_envs=num_envs,
+                fix_height=False,
+                multi_thread=False,
+                skeleton_file=cfg.skeleton_path,
+                extend_head=extend_head,
+            )
+        elif cfg.robot_name == "g1":
+            self._motion_lib = MotionLibG1(
+                motion_file=cfg.motion_path,
+                device=self._device,
+                num_envs=num_envs,
+                fix_height=False,
+                multi_thread=False,
+                skeleton_file=cfg.skeleton_path,
+                extend_head=extend_head,
+            )
+        else:
+            raise ValueError
 
         self._skeleton_trees = [SkeletonTree.from_mjcf(cfg.skeleton_path)] * self._num_envs
 
@@ -152,11 +167,7 @@ class ReferenceMotionManager:
     def load_motions(self, random_sample: bool, start_idx: int):
         """Loads motions from the motion dataset."""
         self._motion_lib.load_motions(
-            skeleton_trees=self._skeleton_trees,
-            gender_betas=[torch.zeros(17)] * self._num_envs,
-            limb_weights=[np.zeros(10)] * self._num_envs,
             random_sample=random_sample,
-            start_idx=start_idx,
         )
         self._motion_len = self._motion_lib.get_motion_length(self._motion_ids)
         self.reset_motion_start_times(env_ids=self._motion_ids, sample=False)

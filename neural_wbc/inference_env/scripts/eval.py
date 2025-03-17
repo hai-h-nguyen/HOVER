@@ -19,6 +19,7 @@ import yaml
 
 from inference_env.deployment_player import DeploymentPlayer
 from inference_env.neural_wbc_env_cfg_h1 import NeuralWBCEnvCfgH1
+from inference_env.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 from inference_env.utils import get_player_args
 
 from neural_wbc.core.evaluator import Evaluator
@@ -27,6 +28,7 @@ from neural_wbc.data import get_data_path
 # add argparse arguments
 parser = get_player_args(description="Evaluates motion tracking policy and collects metrics in MuJoCo.")
 parser.add_argument("--metrics_path", type=str, default=None, help="Path to store metrics in.")
+parser.add_argument("--robot", type=str, choices=["h1", "g1", "gr1"], default="h1", help="Robot used in environment")
 args_cli = parser.parse_args()
 
 
@@ -39,11 +41,20 @@ def main():
         pprint.pprint(custom_config)
 
     # Initialize the player with the updated properties
-    player = DeploymentPlayer(
+    if args_cli.robot == "h1":
+        player = DeploymentPlayer(
         args_cli=args_cli,
         env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/scene.xml")),
         custom_config=custom_config,
-    )
+        )
+    elif args_cli.robot == "g1":
+        player = DeploymentPlayer(
+        args_cli=args_cli,
+        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/scene.xml")),
+        custom_config=custom_config,
+        )
+    else:
+        raise ValueError
     evaluator = Evaluator(env_wrapper=player.env, metrics_path=args_cli.metrics_path)
 
     should_stop = False

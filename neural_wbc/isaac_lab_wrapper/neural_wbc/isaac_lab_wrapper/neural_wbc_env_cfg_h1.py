@@ -302,6 +302,7 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     def __post_init__(self):
         super().__post_init__()
 
+        self.reference_motion_manager.robot_name = "h1"
         self.reference_motion_manager.motion_path = get_data_path("motions/stable_punch.pkl")
         self.reference_motion_manager.skeleton_path = get_data_path("motion_lib/h1.xml")
 

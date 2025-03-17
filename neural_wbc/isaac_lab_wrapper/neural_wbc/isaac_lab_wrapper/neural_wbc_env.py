@@ -33,7 +33,7 @@ from isaaclab.sensors import ContactSensor, RayCaster
 from isaaclab.utils.noise import NoiseModel, NoiseModelCfg, UniformNoiseCfg
 
 from .body_state import build_body_state
-from .rewards import NeuralWBCRewards
+from .rewards import NeuralWBCRewards, NeuralWBCRewards_G1
 from .visualization import RefMotionVisualizer
 
 if TYPE_CHECKING:
@@ -240,13 +240,24 @@ class NeuralWBCEnv(DirectRLEnv):
 
         # Rewards
         feet_body_ids = [self._body_names.index(feet_name) for feet_name in self.feet_names]
-        self._rewards = NeuralWBCRewards(
-            env=self,
-            reward_cfg=self.cfg.rewards,
-            contact_sensor=self.contact_sensor,
-            contact_sensor_feet_ids=self.feet_ids,
-            body_state_feet_ids=feet_body_ids,
-        )
+        if self.num_actions == 19:
+            self._rewards = NeuralWBCRewards(
+                env=self,
+                reward_cfg=self.cfg.rewards,
+                contact_sensor=self.contact_sensor,
+                contact_sensor_feet_ids=self.feet_ids,
+                body_state_feet_ids=feet_body_ids,
+                root_ids=self.cfg.root_id,
+            )
+        else:
+            self._rewards = NeuralWBCRewards_G1(
+                env=self,
+                reward_cfg=self.cfg.rewards,
+                contact_sensor=self.contact_sensor,
+                contact_sensor_feet_ids=self.feet_ids,
+                body_state_feet_ids=feet_body_ids,
+                root_ids=self.cfg.root_id,
+            )
         self._termination_conditions = {}
 
         # Curriculum
