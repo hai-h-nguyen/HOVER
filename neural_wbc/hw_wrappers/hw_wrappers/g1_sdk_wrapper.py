@@ -108,11 +108,11 @@ class G1SDKWrapper:
         cmd.mode_pr = mode_pr
         for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
             cmd.motor_cmd[i].mode = 1
-            cmd.motor_cmd[i].q = 0
-            cmd.motor_cmd[i].qd = 0
+            cmd.motor_cmd[i].q = 0.
+            cmd.motor_cmd[i].qd = 0.
             cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
             cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
-            cmd.motor_cmd[i].tau = 0
+            cmd.motor_cmd[i].tau = 0.
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -137,6 +137,7 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._low_cmd.motor_cmd[motor_idx].tau = 0.0
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
+            print("self._low_cmd: ", self._low_cmd.motor_cmd[12].q, self._low_cmd.motor_cmd[13].q, self._low_cmd.motor_cmd[14].q)
             self._cmd_received = True
 
     def publish_joint_torque_cmd(self, cmd_joint_torques: np.ndarray):
@@ -156,7 +157,7 @@ class G1SDKWrapper:
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
-    def reset(self, desired_joint_positions: np.ndarray | None = None) -> None:
+    def reset(self, desired_qpos: np.ndarray | None = None) -> None:
         """Resets the robot to the given joint positions.
 
         Args:
@@ -166,11 +167,32 @@ class G1SDKWrapper:
         self.time_ = 0.0
         self.control_dt_ = self.cfg.reset_step_dt
         self.duration_ = self.cfg.reset_duration
-        desired_joint_positions = desired_joint_positions.flatten()
-        if desired_joint_positions is None:
-            desired_joint_positions = np.zeros(self.cfg.num_joints)
-        print("Resetting G1 to given pose.")
-        print("desired_joint_positions: ", desired_joint_positions)
+        
+        # desired_joint_positions = np.array([ 
+        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0, 
+        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
+        #                         0.0, 0., 0.,
+        #                         0, 0, 0, 0,
+        #                         0, 0, 0, 0])
+        # if desired_joint_positions is None:
+        #     desired_joint_positions = np.zeros(self.cfg.num_joints)
+        # print("Resetting G1 to given pose.")
+        # print("desired_joint_positions: ", desired_joint_positions)
+        # while self.time_ < self.duration_:
+        #     self.time_ += self.control_dt_
+        #     ratio = self.time_ / self.duration_
+        #     print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
+        #     current_joint_positions = self.joint_positions
+        #     target_joint_positions = (
+        #         current_joint_positions + (desired_joint_positions - current_joint_positions) * ratio
+        #     )
+        #     # self.publish_joint_position_cmd(desired_joint_positions)
+        #     print("current_joint_positions: ", current_joint_positions[0:15])
+        #     time.sleep(self.control_dt_)
+        # self.time_ = 0.0
+
+        desired_joint_positions = desired_qpos.flatten()
+        desired_joint_positions[10] = -0.3
         while self.time_ < self.duration_:
             self.time_ += self.control_dt_
             ratio = self.time_ / self.duration_

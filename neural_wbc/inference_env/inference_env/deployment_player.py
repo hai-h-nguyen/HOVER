@@ -103,6 +103,11 @@ class DeploymentPlayer:
                 actions = ext_actions
             else:
                 actions = self.policy(obs)
+                # actions_ok = actions.clone()
+                # import ipdb; ipdb.set_trace()
+                # actions = torch.zeros_like(actions)
+                # actions[:,0] = actions_ok[:,0]
+                
             _, obs, dones, extras = self.env.step(actions)  # For HW, this internally just does forward and sends commands
         return actions, obs, dones, extras
 

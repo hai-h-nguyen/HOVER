@@ -140,7 +140,7 @@ G1_CFG = ArticulationCfg(
             stiffness=0,
             damping=0,
 
-            armature=0.01,
+            armature=0.001,
             # friction=0.03,
         ),
         "feet": IdealPDActuatorCfg(
@@ -152,7 +152,7 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.01,
+            armature=0.001,
             # friction=0.03,
 
         ),
@@ -173,7 +173,7 @@ G1_CFG = ArticulationCfg(
             stiffness=0,
             damping=0,
 
-            armature=0.01,
+            armature=0.001,
             # friction=0.03,
 
         ),
@@ -368,6 +368,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_shoulder_yaw_joint": 2.0,
         "right_elbow_joint": 2.0,
     }
+
 
 
     mass_randomized_body_names = [

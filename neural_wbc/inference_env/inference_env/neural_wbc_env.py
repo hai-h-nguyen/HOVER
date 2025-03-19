@@ -389,6 +389,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
         root_ang_vel = ref_motion_state.root_ang_vel[env_ids]
 
         # Assemble the state of generalized coordinates.
+        joint_pos[:, 10] = -0.3
+        root_pos[:2] -= 0.04
         qpos = torch.hstack((root_pos, root_quat, joint_pos))
         qvel = torch.hstack((root_ang_vel, root_lin_vel, joint_vel))
 

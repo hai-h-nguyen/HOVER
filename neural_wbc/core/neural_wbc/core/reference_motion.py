@@ -195,7 +195,7 @@ class ReferenceMotionManager:
         """Query a reference motion frame from motion lib."""
         motion_times = episode_length_buf * self._dt + self._motion_start_times
         motion_res = self._motion_lib.get_motion_state(self._motion_ids, motion_times, offset=offset)
-
+        
         if terrain_heights is not None:
             delta_height = terrain_heights.clone()
             if offset is not None:
@@ -205,6 +205,12 @@ class ReferenceMotionManager:
                 motion_res["rg_pos"][:, :, 2] += delta_height
             if "rg_pos_t" in motion_res:
                 motion_res["rg_pos_t"][:, :, 2] += delta_height
+
+        if False:
+            if "rg_pos" in motion_res:
+                motion_res["rg_pos"][:, :, 2] += -0.02
+            if "rg_pos_t" in motion_res:
+                motion_res["rg_pos_t"][:, :, 2] += -0.02
 
         # Update quaternion convention
         if quaternion_is_xyzw:
