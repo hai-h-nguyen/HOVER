@@ -41,9 +41,15 @@ def main():
         print("[INFO]: Using custom configuration:")
         pprint.pprint(custom_config)
 
+<<<<<<< HEAD
     if args_cli.robot == "unitree_h1":
         env_cfg = NeuralWBCEnvCfgRealH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"))
     if args_cli.robot == "unitree_g1":
+=======
+    if args_cli.robot_name == "h1":
+        env_cfg = NeuralWBCEnvCfgRealH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"))
+    if args_cli.robot_name == "g1":
+>>>>>>> d16ac8a (fixing deployment)
         env_cfg = NeuralWBCEnvCfgRealG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"))
 
     player = DeploymentPlayer(
