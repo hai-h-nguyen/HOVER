@@ -79,7 +79,7 @@ G1_CFG = ArticulationCfg(
             max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=0
+            enabled_self_collisions=True, solver_position_iteration_count=4, solver_velocity_iteration_count=0
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
@@ -139,7 +139,7 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.03,
+            armature=0.0003,
             friction=0.03,
         ),
         "feet": IdealPDActuatorCfg(
@@ -151,7 +151,7 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.03,
+            armature=0.0003,
             friction=0.03,
         ),
         "arms": IdealPDActuatorCfg(
@@ -170,7 +170,7 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.03,
+            armature=0.0003,
             friction=0.03,
         ),
     }
