@@ -127,7 +127,7 @@ class ReferenceMotionManager:
         else:
             raise ValueError
 
-        self._skeleton_trees = [SkeletonTree.from_mjcf(cfg.skeleton_path)] * self._num_envs
+        # self._skeleton_trees = [SkeletonTree.from_mjcf(cfg.skeleton_path)] * self._num_envs
 
         self._motion_ids = torch.arange(self._num_envs).to(self._device)
         self._motion_start_times = torch.zeros(
@@ -166,9 +166,7 @@ class ReferenceMotionManager:
 
     def load_motions(self, random_sample: bool, start_idx: int):
         """Loads motions from the motion dataset."""
-        self._motion_lib.load_motions(
-            random_sample=random_sample,
-        )
+        self._motion_lib.load_motions(random_sample=random_sample, start_idx=start_idx)
         self._motion_len = self._motion_lib.get_motion_length(self._motion_ids)
         self.reset_motion_start_times(env_ids=self._motion_ids, sample=False)
 

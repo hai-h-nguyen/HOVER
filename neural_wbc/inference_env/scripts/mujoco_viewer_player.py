@@ -12,7 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
+os.environ["MUJOCO_GL"] = "egl"
 
 import pprint
 import time
@@ -21,6 +22,7 @@ import yaml
 
 from inference_env.deployment_player import DeploymentPlayer
 from inference_env.neural_wbc_env_cfg_h1 import NeuralWBCEnvCfgH1
+from inference_env.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 from inference_env.utils import get_player_args
 
 from neural_wbc.data import get_data_path
@@ -34,11 +36,14 @@ CTRL_FREQ = 200.0
 
 def prep_joint_pos_cmd(env, joint_pos_cmd: dict[str, float] | None = None) -> torch.Tensor:
     full_joint_pos_cmd = env.robot.joint_positions
+    # print(full_joint_pos_cmd)
     if joint_pos_cmd is not None:
         with torch.inference_mode():
             for joint_name, joint_cmd in joint_pos_cmd.items():
+                print(joint_name, joint_cmd)
                 joint_id = env.robot.get_joint_ids(joint_names=[joint_name])[joint_name]
                 full_joint_pos_cmd[:, joint_id] = joint_cmd
+            print("="*50)
     return full_joint_pos_cmd
 
 
@@ -52,19 +57,53 @@ def main():
 
     # Delta joint position command of the robot. These will be applied based on the PD positional controller
     # defined in control.py.
-    joint_pos_cmd = {
-        "right_elbow": 2.0,
-        "left_elbow": -2.0,
-        "torso": 2.0,
-        "right_knee": 2.0,
-        "left_knee": 2.0,
-        "right_ankle": 1.0,
-        "left_ankle": 1.0,
-    }
+    # joint_pos_cmd = {
+    #     "right_elbow": 2.0,
+    #     "left_elbow": -2.0,
+    #     "torso": 2.0,
+    #     "right_knee": 2.0,
+    #     "left_knee": 2.0,
+    #     "right_ankle": 1.0,
+    #     "left_ankle": 1.0,
+    # }
 
+    # player = DeploymentPlayer(
+    #     args_cli=args_cli,
+    #     env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
+    #     custom_config=custom_config,
+    #     demo_mode=True,
+    # )
+
+    joint_pos_cmd = {
+                    "left_hip_pitch_joint": -0.1,
+                    "left_hip_roll_joint": 0.,
+                    "left_hip_yaw_joint": 0.,
+                    "left_knee_joint": 0.3,
+                    "left_ankle_pitch_joint": -0.2,
+                    "left_ankle_roll_joint": 0.,
+                    "right_hip_pitch_joint": -0.1,
+                    "right_hip_roll_joint": 0.,
+                    "right_hip_yaw_joint": 0.,
+                    "right_knee_joint": 0.3,
+                    "right_ankle_pitch_joint": -0.2,
+                    "right_ankle_roll_joint": 0.,
+                    "waist_yaw_joint" : 0.,
+                    "waist_roll_joint" : 0.,
+                    "waist_pitch_joint" : 0.,
+                    "left_shoulder_pitch_joint": 0.,
+                    "left_shoulder_roll_joint": 0.,
+                    "left_shoulder_yaw_joint": 0.,
+                    "left_elbow_joint": 2.,
+                    "right_shoulder_pitch_joint": 0.,
+                    "right_shoulder_roll_joint": 0.,
+                    "right_shoulder_yaw_joint": 0.,
+                    "right_elbow_joint": 0.,
+    }
+    # joint_pos_cmd = None
     player = DeploymentPlayer(
         args_cli=args_cli,
-        env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/scene.xml")),
+        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"),
+                                  single_history_dim=75),
         custom_config=custom_config,
         demo_mode=True,
     )

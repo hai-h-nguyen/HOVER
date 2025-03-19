@@ -78,8 +78,10 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     # Mask setup for an OH2O specialist policy as default:
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
-    distill_mask_sparsity_randomization_enabled = True
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    # distill_mask_sparsity_randomization_enabled = True
+    distill_mask_sparsity_randomization_enabled = False
+    # distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],

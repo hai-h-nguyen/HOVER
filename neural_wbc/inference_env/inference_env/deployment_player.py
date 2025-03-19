@@ -63,7 +63,6 @@ class DeploymentPlayer:
 
         if args_cli.reference_motion_path is not None:
             env_cfg.reference_motion_cfg.motion_path = args_cli.reference_motion_path
-
         if custom_config is not None:
             self._update_env_cfg(env_cfg=env_cfg, custom_config=custom_config)
 

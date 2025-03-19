@@ -91,19 +91,23 @@ G1_CFG = ArticulationCfg(
                     "left_knee_joint": 0.3,
                     "left_ankle_pitch_joint": -0.2,
                     "left_ankle_roll_joint": 0.,
+
                     "right_hip_pitch_joint": -0.1,
                     "right_hip_roll_joint": 0.,
                     "right_hip_yaw_joint": 0.,
                     "right_knee_joint": 0.3,
                     "right_ankle_pitch_joint": -0.2,
                     "right_ankle_roll_joint": 0.,
+                    
                     "waist_yaw_joint" : 0.,
                     "waist_roll_joint" : 0.,
                     "waist_pitch_joint" : 0.,
+                    
                     "left_shoulder_pitch_joint": 0.,
                     "left_shoulder_roll_joint": 0.,
                     "left_shoulder_yaw_joint": 0.,
                     "left_elbow_joint": 0.,
+                    
                     "right_shoulder_pitch_joint": 0.,
                     "right_shoulder_roll_joint": 0.,
                     "right_shoulder_yaw_joint": 0.,
@@ -139,8 +143,11 @@ G1_CFG = ArticulationCfg(
             friction=0.03,
         ),
         "feet": IdealPDActuatorCfg(
-            joint_names_expr=[".*_ankle_.*"],
-            effort_limit=50.0,
+            joint_names_expr=[".*_ankle_roll_joint", ".*_ankle_pitch_joint"],
+            effort_limit={
+                ".*_ankle_roll_joint": 50.0,
+                ".*_ankle_pitch_joint": 50.0,
+            },
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
@@ -184,8 +191,9 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # Mask setup for an OH2O specialist policy as default:
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
-    distill_mask_sparsity_randomization_enabled = True
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_sparsity_randomization_enabled = False
+    # distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],

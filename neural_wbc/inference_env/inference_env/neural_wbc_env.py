@@ -412,7 +412,6 @@ class NeuralWBCEnv(EnvironmentWrapper):
         actions_scaled = self.actions * self.cfg.action_scale + self.default_joint_pos
         self._processed_action = self._control_fn(self, actions_scaled)
         self._processed_action = self._apply_limits(self._processed_action)
-
         # Adding noise to the control signal to enhance robustness
         joint_ids = [v for v in self._joint_ids.values()]
         actions_noise = (
