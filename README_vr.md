@@ -72,3 +72,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --student_checkpoint model_<iteration_number>.pt \
     --robot_model g1
 ```
+
+```bash
+${ISAACLAB_PATH}/isaaclab.sh -p neural_wbc/inference_env/scripts/mujoco_viewer_player.py
+```

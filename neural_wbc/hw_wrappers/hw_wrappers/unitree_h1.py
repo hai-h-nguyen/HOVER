@@ -120,7 +120,7 @@ class UnitreeH1(Robot):
         self._kinematic_model.reset(qpos=qpos, qvel=qvel)
 
         joint_positions = qpos[..., self._kinematic_model.joint_pos_offset :]
-        joint_positions_np = joint_positions.numpy()
+        joint_positions_np = joint_positions.cpu().numpy()
 
         # Reset robot pose
         self._h1_sdk.reset(joint_positions_np)
