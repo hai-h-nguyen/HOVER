@@ -4,6 +4,9 @@ git+https://github.com/ZhengyiLuo/SMPLSim.git@dd65a86
 easydict
 warp-lang
 dataclass-wizard
+open3d
+wandb
+ipdb
 
 -e neural_wbc/core
 -e neural_wbc/data

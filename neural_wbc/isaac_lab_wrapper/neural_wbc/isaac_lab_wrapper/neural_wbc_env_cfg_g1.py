@@ -67,7 +67,7 @@ ENFORCED_TOGETHERNESS = {
 
 G1_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"/home/rtx4/ASAP/humanoidverse/data/robots/g1/g1_29dof_anneal_23dof.usd",
+        usd_path=get_data_path("motion_lib/g1_29dof_anneal_23dof.usd"),
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -402,7 +402,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         super().__post_init__()
 
         self.reference_motion_manager.robot_name = "g1"
-        self.reference_motion_manager.motion_path = get_data_path("motions/stable_punch.pkl")
+        self.reference_motion_manager.motion_path = get_data_path("motions/g1_test.pkl")
         self.reference_motion_manager.skeleton_path = get_data_path("motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml")
 
         if self.terrain.terrain_generator == HARD_ROUGH_TERRAINS_CFG:

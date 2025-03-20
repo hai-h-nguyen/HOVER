@@ -110,7 +110,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
     --robot h1
 ```
 
-The teacher policy is trained for 10000000 iterations, or until the user interrupts the training. The resulting checkpoint is stored in `neural_wbc/data/data/policy/h1:teacher/` and the filename is `model_<iteration_number>.pt`.
+The teacher policy is trained for 10000000 iterations, or until the user interrupts the training. The resulting checkpoint is stored in `logs/teacher/<date_time>` and the filename is `model_<iteration_number>.pt`.
 
 Similarly, for Unitree-G1,
 ```bash
@@ -130,7 +130,7 @@ In the project's root directory,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
     --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
-    --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
+    --teacher_policy.resume_path logs/teacher/<date_time> \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
@@ -140,7 +140,7 @@ Similarly, for Unitree-G1,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
     --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
-    --teacher_policy.resume_path neural_wbc/data/data/policy/g1:teacher \
+    --teacher_policy.resume_path logs/teacher/<date_time> \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot g1
 ```
@@ -165,7 +165,7 @@ The exact path of the teacher policy does not matter, but it is recommended to s
     ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
         --num_envs 10 \
         --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
-        --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
+        --teacher_policy.resume_path logs/teacher/<date_time> \
         --teacher_policy.checkpoint model_<iteration_number>.pt \
         --robot h1
     ```
@@ -174,7 +174,7 @@ The exact path of the teacher policy does not matter, but it is recommended to s
     ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
         --num_envs 10 \
         --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
-        --teacher_policy.resume_path neural_wbc/data/data/policy/g1:teacher \
+        --teacher_policy.resume_path logs/teacher/<date_time> \
         --teacher_policy.checkpoint model_<iteration_number>.pt \
         --robot g1
     ```
@@ -227,7 +227,7 @@ In the project's root directory,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
-    --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
+    --teacher_policy.resume_path logs/teacher/<date_time>  \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
@@ -236,7 +236,7 @@ or
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
-    --teacher_policy.resume_path neural_wbc/data/data/policy/g1:teacher \
+    --teacher_policy.resume_path logs/teacher/<date_time>  \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot g1
 ```
@@ -250,7 +250,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
     --student_player \
-    --student_path neural_wbc/data/data/policy/h1:student \
+    --student_path logs/student/<date_time>  \
     --student_checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
@@ -260,7 +260,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
     --student_player \
-    --student_path neural_wbc/data/data/policy/g1:student \
+    --student_path logs/student/<date_time> \
     --student_checkpoint model_<iteration_number>.pt \
     --robot g1
 ```
@@ -312,6 +312,20 @@ ${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/eval.py \
     --num_envs 10 \
 ```
 
+For example,
+```bash
+${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/eval.py  --num_envs 10 \
+--teacher_policy.resume_path  logs/teacher/<date_time>\
+--teacher_policy.checkpoint model_<iteration_number>.pt --robot g1
+```
+
+or
+```bash
+${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/eval.py  --num_envs 10 \
+--student_player \
+--student_path logs/student/<date_time> \
+--student_checkpoint model_<iteration_number>.pt --robot g1
+```
 
 # Overwriting Configuration Values
 
@@ -359,10 +373,20 @@ To run the evaluation of Sim2Sim,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --num_envs 1 \
     --headless \
-    --student_path neural_wbc/data/data/policy/h1:student/ \
+    --student_path logs/student/<date_time> \
     --student_checkpoint model_<iteration_number>.pt \
     --robot_model h1
 ```
+or
+```bash
+${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
+    --num_envs 1 \
+    --headless \
+    --student_path logs/student/<date_time> \
+    --student_checkpoint model_<iteration_number>.pt \
+    --robot_model g1
+```
+
 
 Please be aware that the `mujoco_wrapper` only supports one environment at a time. For a reference, it will take up to `5h` to evaluate `8k` reference motions. The inference_env is designed for maximum versatility.
 
@@ -375,7 +399,7 @@ To deploy the trained policy on the [Unitree H1 robot](https://unitree.com/h1),
 
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/s2r_player.py \
-    --student_path neural_wbc/data/data/policy/h1:student/ \
+    --student_path logs/student/<date_time> \
     --student_checkpoint model_<iteration_number>.pt \
     --reference_motion_path neural_wbc/data/data/motions/<motion_name>.pkl \
     --robot unitree_h1 \

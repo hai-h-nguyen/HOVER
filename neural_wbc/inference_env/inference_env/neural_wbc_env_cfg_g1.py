@@ -217,5 +217,5 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
 
     def __post_init__(self):
         self.reference_motion_cfg.robot_name = "g1"
-        self.reference_motion_cfg.motion_path = get_data_path("motions/amass_full_g1_anneal.pkl")
+        self.reference_motion_cfg.motion_path = get_data_path("motions/g1_test.pkl")
         self.reference_motion_cfg.skeleton_path = get_data_path("motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml")
