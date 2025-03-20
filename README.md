@@ -106,11 +106,20 @@ In the project's root directory,
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
     --num_envs 1024 \
-    --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
-    -- robot h1
+    --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
+    --robot h1
 ```
 
 The teacher policy is trained for 10000000 iterations, or until the user interrupts the training. The resulting checkpoint is stored in `neural_wbc/data/data/policy/h1:teacher/` and the filename is `model_<iteration_number>.pt`.
+
+Similarly, for Unitree-G1,
+```bash
+${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
+    --num_envs 1024 \
+    --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
+    --robot g1
+```
+You can add the flag `--headless` to train without GUI rendering.
 
 
 ## Student Policy
@@ -120,11 +129,22 @@ In the project's root directory,
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
     --num_envs 1024 \
-    --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
+    --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
     --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
+
+Similarly, for Unitree-G1,
+```bash
+${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
+    --num_envs 1024 \
+    --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
+    --teacher_policy.resume_path neural_wbc/data/data/policy/g1:teacher \
+    --teacher_policy.checkpoint model_<iteration_number>.pt \
+    --robot g1
+```
+
 This assumes that you have already trained the teacher policy as there is no provided teacher policy in the repo. Change the filename to match the checkpoint you trained.
 The exact path of the teacher policy does not matter, but it is recommended to store it in the data folder. If stored outside the data folder, you might need to provide the full path.
 
@@ -133,7 +153,7 @@ The exact path of the teacher policy does not matter, but it is recommended to s
 
 - The examples above use a low number of environments as a toy demo. For good results we
     recommend to train with at least 4096 environments.
-- The examples above use the `stable_punch.pkl` dataset as a toy demo. For good
+- The examples above use the `h1_test.pkl` and `g1_test.pkl` dataset as a toy demo. For good
     results we recommend to train with the full amass dataset.
 - Per default the trained checkpoints are stored to `logs/teacher/` or `logs/student/`.
 - If you don't want to train from scratch you can resume training from a checkpoint using the
@@ -144,10 +164,19 @@ The exact path of the teacher policy does not matter, but it is recommended to s
     ```bash
     ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
         --num_envs 10 \
-        --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
+        --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
         --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
         --teacher_policy.checkpoint model_<iteration_number>.pt \
         --robot h1
+    ```
+    or
+    ```bash
+    ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
+        --num_envs 10 \
+        --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
+        --teacher_policy.resume_path neural_wbc/data/data/policy/g1:teacher \
+        --teacher_policy.checkpoint model_<iteration_number>.pt \
+        --robot g1
     ```
 
 ## Generalist vs. Specialist Policy
@@ -197,10 +226,19 @@ In the project's root directory,
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
-    --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
+    --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
     --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
-    --teacher_policy.checkpoint model_<iteration_number>.pt
+    --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot h1
+```
+or
+```bash
+${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
+    --num_envs 10 \
+    --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
+    --teacher_policy.resume_path neural_wbc/data/data/policy/g1:teacher \
+    --teacher_policy.checkpoint model_<iteration_number>.pt \
+    --robot g1
 ```
 
 ## Play Student Policy
@@ -210,11 +248,21 @@ In the project's root directory,
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
-    --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
+    --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
     --student_player \
     --student_path neural_wbc/data/data/policy/h1:student \
     --student_checkpoint model_<iteration_number>.pt \
     --robot h1
+```
+or
+```bash
+${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
+    --num_envs 10 \
+    --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
+    --student_player \
+    --student_path neural_wbc/data/data/policy/g1:student \
+    --student_checkpoint model_<iteration_number>.pt \
+    --robot g1
 ```
 
 # Evaluation
