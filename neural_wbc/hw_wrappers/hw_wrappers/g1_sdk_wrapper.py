@@ -106,7 +106,7 @@ class G1SDKWrapper:
     def init_cmd_hg(self, cmd: LowCmd_, mode_machine: int, mode_pr: int):
         cmd.mode_machine = mode_machine
         cmd.mode_pr = mode_pr
-        for i, motor_name in self.cfg.motor_id_to_name.items():
+        for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
             cmd.motor_cmd[i].mode = 1
             cmd.motor_cmd[i].q = 0
             cmd.motor_cmd[i].qd = 0
