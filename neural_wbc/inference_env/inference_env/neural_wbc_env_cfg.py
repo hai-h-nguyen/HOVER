@@ -35,8 +35,8 @@ class NeuralWBCEnvCfg(Protocol):
     default_rfi_lim = 0.0
 
     # Distillation parameters:
-    single_history_dim: int = 63
-    observation_history_length: int = 25
+    single_history_dim = 63
+    observation_history_length = 25
 
     reference_motion_cfg = ReferenceMotionManagerCfg()
 

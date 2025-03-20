@@ -177,7 +177,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     }
 
     robot_init_state = {
-        "base_pos": [0.0, 0.0, 0.8],
+        "base_pos": [0.0, 0.0, 0.78],
         "base_quat": [1.0, 0.0, 0.0, 0.0],
         "joint_pos": {
                     "left_hip_pitch_joint": -0.1,

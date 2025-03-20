@@ -103,8 +103,7 @@ def main():
     if args_cli.robot == "g1":
         player = DeploymentPlayer(
             args_cli=args_cli,
-            env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"),
-                                    single_history_dim=75),
+            env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml")),
             custom_config=custom_config,
             demo_mode=True,
         )
@@ -112,8 +111,7 @@ def main():
     if args_cli.robot == "h1":
         player = DeploymentPlayer(
             args_cli=args_cli,
-            env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"),
-                                    single_history_dim=75),
+            env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
             custom_config=custom_config,
             demo_mode=True,
         )
