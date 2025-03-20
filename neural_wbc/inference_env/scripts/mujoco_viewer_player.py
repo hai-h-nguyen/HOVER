@@ -100,13 +100,24 @@ def main():
                     "right_elbow_joint": 0.,
     }
     # joint_pos_cmd = None
-    player = DeploymentPlayer(
-        args_cli=args_cli,
-        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"),
-                                  single_history_dim=75),
-        custom_config=custom_config,
-        demo_mode=True,
-    )
+    if args_cli.robot == "g1":
+        player = DeploymentPlayer(
+            args_cli=args_cli,
+            env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"),
+                                    single_history_dim=75),
+            custom_config=custom_config,
+            demo_mode=True,
+        )
+        
+    if args_cli.robot == "h1":
+        player = DeploymentPlayer(
+            args_cli=args_cli,
+            env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"),
+                                    single_history_dim=75),
+            custom_config=custom_config,
+            demo_mode=True,
+        )
+
     for i in range(args_cli.max_iterations):
         _, obs, dones, extras = player.play_once(prep_joint_pos_cmd(player.env, joint_pos_cmd))
         time.sleep(1.0 / CTRL_FREQ)

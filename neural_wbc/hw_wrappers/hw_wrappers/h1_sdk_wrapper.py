@@ -43,6 +43,8 @@ class H1SDKWrapper:
         self._cmd_publish_dt = self.cfg.cmd_publish_dt
         self._init_cmd()
 
+        self._update_mode_machine = False
+    
         self._low_state = None
         self.crc = CRC()
         self._joint_positions = np.zeros(self.cfg.num_joints)
@@ -56,6 +58,9 @@ class H1SDKWrapper:
             interval=self._cmd_publish_dt, target=self._cmd_publisher, name="control_loop"
         )
         self._cmd_publisher_thread_ptr.Start()
+        print("H1 SDK Wrapper initialized.")
+
+        # import ipdb; ipdb.set_trace()
 
     def _cmd_publisher(self):
         """Publishes the low-level command to the SDK."""
@@ -71,7 +76,12 @@ class H1SDKWrapper:
         Args:
             None
         """
-        ChannelFactoryInitialize(0, self.cfg.network_interface)
+        if self.cfg.network_interface == "lo":
+            ChannelFactoryInitialize(1, self.cfg.network_interface)
+            print("Using local interface.")
+        else:
+            ChannelFactoryInitialize(0, self.cfg.network_interface)
+            print(f"Using network interface: {self.cfg.network_interface}")
 
         # Create publisher
         self._lowcmd_publisher = ChannelPublisher(self.cfg.command_channel, LowCmd_)
@@ -81,6 +91,14 @@ class H1SDKWrapper:
         self.lowstate_subscriber = ChannelSubscriber(self.cfg.state_channel, LowState_)
         self.lowstate_subscriber.Init(self.state_handler, self.cfg.subscriber_freq)
 
+        print("Waiting for the robot to connect...")
+        self.wait_for_low_state()
+
+    def wait_for_low_state(self):
+        while not self._update_mode_machine:
+            time.sleep(0.02)
+        print("Successfully connected to the robot.")
+        
     def _is_weak_motor(self, motor_idx: int) -> bool:
         """Check if a motor is a weak motor.
 
@@ -107,6 +125,7 @@ class H1SDKWrapper:
         Args:
             cmd_joint_positions (np.ndarray): An array of joint positions to be published.
         """
+        # print("cmd_joint_positions: ", cmd_joint_positions)
         with self._low_cmd_lock:
             for joint_idx in range(self.cfg.num_joints):
                 motor_idx = self.cfg.JointSeq2MotorID[joint_idx]
@@ -147,6 +166,7 @@ class H1SDKWrapper:
         if desired_joint_positions is None:
             desired_joint_positions = np.zeros(self.cfg.num_joints)
         print("Resetting H1 to given pose.")
+        print("desired_joint_positions: ", desired_joint_positions)
         while self.time_ < self.duration_:
             self.time_ += self.control_dt_
             ratio = self.time_ / self.duration_
@@ -229,6 +249,8 @@ class H1SDKWrapper:
         Args:
             msg (LowState_): The low state message containing the motor states.
         """
+        if self._update_mode_machine == False:
+            self._update_mode_machine = True
         self._low_state = msg
         # The orientation is in the world frame, which depends on the initial pose of the robot.
         self._torso_orientation_quat = self._low_state.imu_state.quaternion

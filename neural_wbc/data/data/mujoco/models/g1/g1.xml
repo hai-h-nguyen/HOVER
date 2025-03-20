@@ -4,7 +4,7 @@
   <default>
     <default class="g1">
      <!-- <geom friction="0.03" margin="0.001" condim="1"/> -->
-      <joint armature="0.5" frictionloss="0.03"/>
+      <joint armature="0.05" frictionloss="0.03"/>
       <default class="visual">
         <geom type="mesh" contype="0" conaffinity="0" group="2" material="black"/>
       </default>

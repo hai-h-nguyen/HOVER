@@ -67,12 +67,19 @@ Sim-to-Sim Validation
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --num_envs 1 \
-    --headless \
     --student_path <path> \
     --student_checkpoint model_<iteration_number>.pt \
     --robot_model g1
 ```
 
+## Deployment
+
 ```bash
-${ISAACLAB_PATH}/isaaclab.sh -p neural_wbc/inference_env/scripts/mujoco_viewer_player.py
+${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/s2r_player.py \
+    --student_path <path> \
+    --student_checkpoint model_<iteration_number>.pt \
+    --reference_motion_path neural_wbc/data/data/motions/<motion_name>.pkl \
+    --robot unitree_h1 \
+    --max_iterations 5000 \
+    --num_envs 1
 ```
