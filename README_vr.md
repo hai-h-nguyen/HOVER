@@ -72,7 +72,6 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --robot_model g1
 ```
 
-<<<<<<< HEAD
 ## Deployment
 
 ```bash
@@ -83,8 +82,4 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/s2r_player.py
     --robot unitree_h1 \
     --max_iterations 5000 \
     --num_envs 1
-=======
-```bash
-${ISAACLAB_PATH}/isaaclab.sh -p neural_wbc/inference_env/scripts/mujoco_viewer_player.py
->>>>>>> d16ac8a (fixing deployment)
 ```
