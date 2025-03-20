@@ -80,7 +80,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
 
         self._joint_ids = self._robot.get_joint_ids()
         self._body_ids = self._robot.get_body_ids()
-        self._base_name = "torso_link"
+        # self._base_name = "torso_link"
+        self._base_name = "pelvis"
         self._base_id = self._body_ids[self._base_name]
 
         self.num_actions = self._robot.num_controls

@@ -262,7 +262,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     lower_body_joint_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # hips, knees, ankles, torso
     upper_body_joint_ids = [15, 16, 17, 18, 19, 20, 21, 22]  # shoulders, elbows
 
-    base_name = "torso_link"
+    # base_name = "torso_link"
+    base_name = "pelvis"
     root_id = body_names.index(base_name)
 
     feet_name = ".*_ankle_roll_link"
@@ -386,7 +387,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
 
     # Add a height scanner to the torso to detect the height of the terrain mesh
     height_scanner = RayCasterCfg(
-        prim_path="/World/envs/env_.*/Robot/pelvis",
+        prim_path="/World/envs/env_.*/Robot/torso_link",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),
         attach_yaw_only=True,
         # Apply a grid pattern that is smaller than the resolution to only return one height value.
