@@ -72,54 +72,31 @@ demonstrations and to link to the original implementation in Isaac Gym, please v
     ```bash
     ./install_deps.sh
     ```
+5. Run `git apply` to update code for motion loading.
+    ```bash
+    cd third_party/human2humanoid
+    git apply ../human2maunoid.patch
+    ```
+    **Note**: The action should update 4 files in the `third_party/human2humanoid/phc/phc/utils/` folder, including `motion_lib_base.py`, `motion_lib_h1.py`, `torch_h1_humanoid_batch.py`, `torch_utils.py`. In case it fails to update any files above, following these below commands:
+    ```bash
+    git checkout .
+    git apply ../human2maunoid.patch
+    ```
+6. Add motion loading for Unitree-G1
+    ```bash
+    cd ~/HOVER/
+    mv torch_g1_humanoid_batch.py third_party/human2humanoid/phc/phc/utils/
+    mv motion_lib_g1.py third_party/human2humanoid/phc/phc/utils/
+    ```
 
 # Training
 
 
 ## Data Processing
+### Custom dataset
 
-> **_NOTE:_** Due to the license limitations of the AMASS dataset, we are not able to provide the retargeted dataset directly.
-All the following training and evaluation scripts will use the `stable_punch.pkl` dataset (not included as well)
-as a toy example. It is a small subset of the AMASS dataset where the upper body is performing punching motions.
-We modified the motion data to minimize the lower body's motion to create a simpler example. We suggest that users retarget a small subset of the AMASS dataset to the
-Unitree H1 robot and use that for trial training. The retargeting process of the whole dataset could take up to
-4 days on a 32 CPU core machine. More cores will reduce the time correspondingly.
-
-### AMASS dataset
-
-We utilize the AMASS dataset to train our models. The AMASS dataset is a comprehensive collection of
-motion capture (mocap) datasets. To develop control policies for a humanoid robot, it is essential
-to retarget the motion data in the dataset to fit the desired robot. We provide a bash script that
-retargets the dataset specifically for the Unitree H1 robot. This script is based on the scripts
-from the [human2humanoid repository](https://github.com/LeCAR-Lab/human2humanoid). Due to the
-limitations of the [license](https://amass.is.tue.mpg.de/license.html) of the AMASS dataset, we are
-not providing a retargeted dataset directly. To access the dataset, you will need to create an account.
-
-To get started, follow these steps:
-
-1. Create a folder to save the datasets in `mkdir -p third_party/human2humanoid/data/AMASS/AMASS_Complete`.
-2. Download the dataset(s) you are interested in from the "SMPL+H G" format section on the [AMASS download
-   page](https://amass.is.tue.mpg.de/download.php) and place the archive files in
-   `third_party/human2humanoid/data/AMASS/AMASS_Complete`. This will take some time due to the number of
-   datasets and the fact that apparently they don't allow parallel downloads. You don't need to extract
-   the files manually - the script will handle that for you.
-3. Download the SMPL model from [this
-   link](https://download.is.tue.mpg.de/download.php?domain=smpl&sfile=SMPL_python_v.1.1.0.zip) and
-   place the zip file `third_party/human2humanoid/data/smpl`.
-4. Finally, run the provided script by executing `./retarget_h1.sh`. The script extracts the
-   downloaded files to desired locations, prepares necessary files and dependencies for retargeting.
-   If you want to retarget only specific motions, you can provide a YAML file with the list of motions by running `./retarget_h1.sh --motions-file <path_to_yaml_file>`. See `punch.yaml` for an example. This will only process the motion files specified in the YAML file instead of the full dataset.
-   Note that the script installs pip dependencies and might build some of them, which requires the matching
-   version of the `python-dev` to be installed.
-5. Before proceeding with training and evaluation, run `./install_deps.sh` again to ensure the
-  correct dependencies are installed.
-
-
-The retargeted dataset will be found at `third_party/human2humanoid/data/h1/amass_all.pkl`. Rename it and move it to your desired location.
-While the exact path to the reference motion is not important, we recommend placing it in the `neural_wbc/data/data/motions/`
+While the exact path to the reference motion is not important, we recommend placing custom motions in the `neural_wbc/data/data/motions/`
 folder as the included data library will handle relative path searching, which is useful for unit testing.
-
-For more details, refer to the [human2humanoid repository](https://github.com/LeCAR-Lab/human2humanoid/tree/main?tab=readme-ov-file#motion-retargeting).
 
 ## Teacher Policy
 
@@ -129,7 +106,8 @@ In the project's root directory,
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
     --num_envs 1024 \
-    --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl
+    --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
+    -- robot h1
 ```
 
 The teacher policy is trained for 10000000 iterations, or until the user interrupts the training. The resulting checkpoint is stored in `neural_wbc/data/data/policy/h1:teacher/` and the filename is `model_<iteration_number>.pt`.
@@ -144,7 +122,8 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
     --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
     --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
-    --teacher_policy.checkpoint model_<iteration_number>.pt
+    --teacher_policy.checkpoint model_<iteration_number>.pt \
+    --robot h1
 ```
 This assumes that you have already trained the teacher policy as there is no provided teacher policy in the repo. Change the filename to match the checkpoint you trained.
 The exact path of the teacher policy does not matter, but it is recommended to store it in the data folder. If stored outside the data folder, you might need to provide the full path.
@@ -167,7 +146,8 @@ The exact path of the teacher policy does not matter, but it is recommended to s
         --num_envs 10 \
         --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
         --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
-        --teacher_policy.checkpoint model_<iteration_number>.pt
+        --teacher_policy.checkpoint model_<iteration_number>.pt \
+        --robot h1
     ```
 
 ## Generalist vs. Specialist Policy
@@ -220,6 +200,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
     --teacher_policy.resume_path neural_wbc/data/data/policy/h1:teacher \
     --teacher_policy.checkpoint model_<iteration_number>.pt
+    --robot h1
 ```
 
 ## Play Student Policy
@@ -232,7 +213,8 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --reference_motion_path neural_wbc/data/data/motions/stable_punch.pkl \
     --student_player \
     --student_path neural_wbc/data/data/policy/h1:student \
-    --student_checkpoint model_<iteration_number>.pt
+    --student_checkpoint model_<iteration_number>.pt \
+    --robot h1
 ```
 
 # Evaluation
@@ -330,7 +312,8 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --num_envs 1 \
     --headless \
     --student_path neural_wbc/data/data/policy/h1:student/ \
-    --student_checkpoint model_<iteration_number>.pt
+    --student_checkpoint model_<iteration_number>.pt \
+    --robot_model h1
 ```
 
 Please be aware that the `mujoco_wrapper` only supports one environment at a time. For a reference, it will take up to `5h` to evaluate `8k` reference motions. The inference_env is designed for maximum versatility.
