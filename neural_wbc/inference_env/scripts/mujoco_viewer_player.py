@@ -29,6 +29,7 @@ from neural_wbc.data import get_data_path
 
 # add argparse arguments
 parser = get_player_args(description="Evaluates motion tracking policy and collects metrics in MuJoCo.")
+parser.add_argument("--robot_model", type=str, choices=["h1", "g1", "gr1"], default="h1", help="Robot used in environment")
 args_cli = parser.parse_args()
 
 CTRL_FREQ = 200.0
@@ -36,14 +37,11 @@ CTRL_FREQ = 200.0
 
 def prep_joint_pos_cmd(env, joint_pos_cmd: dict[str, float] | None = None) -> torch.Tensor:
     full_joint_pos_cmd = env.robot.joint_positions
-    # print(full_joint_pos_cmd)
     if joint_pos_cmd is not None:
         with torch.inference_mode():
             for joint_name, joint_cmd in joint_pos_cmd.items():
-                print(joint_name, joint_cmd)
                 joint_id = env.robot.get_joint_ids(joint_names=[joint_name])[joint_name]
                 full_joint_pos_cmd[:, joint_id] = joint_cmd
-            print("="*50)
     return full_joint_pos_cmd
 
 
@@ -57,24 +55,25 @@ def main():
 
     # Delta joint position command of the robot. These will be applied based on the PD positional controller
     # defined in control.py.
-    # joint_pos_cmd = {
-    #     "right_elbow": 2.0,
-    #     "left_elbow": -2.0,
-    #     "torso": 2.0,
-    #     "right_knee": 2.0,
-    #     "left_knee": 2.0,
-    #     "right_ankle": 1.0,
-    #     "left_ankle": 1.0,
-    # }
+    if args_cli.robot_model == "h1":
+        joint_pos_cmd = {
+            "right_elbow": 2.0,
+            "left_elbow": -2.0,
+            "torso": 2.0,
+            "right_knee": 2.0,
+            "left_knee": 2.0,
+            "right_ankle": 1.0,
+            "left_ankle": 1.0,
+        }
 
-    # player = DeploymentPlayer(
-    #     args_cli=args_cli,
-    #     env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
-    #     custom_config=custom_config,
-    #     demo_mode=True,
-    # )
-
-    joint_pos_cmd = {
+        player = DeploymentPlayer(
+            args_cli=args_cli,
+            env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
+            custom_config=custom_config,
+            demo_mode=True,
+        )
+    elif args_cli.robot_model == "g1":
+        joint_pos_cmd = {
                     "left_hip_pitch_joint": -0.1,
                     "left_hip_roll_joint": 0.,
                     "left_hip_yaw_joint": 0.,
@@ -93,7 +92,7 @@ def main():
                     "left_shoulder_pitch_joint": 0.,
                     "left_shoulder_roll_joint": 0.,
                     "left_shoulder_yaw_joint": 0.,
-                    "left_elbow_joint": 2.,
+                    "left_elbow_joint": 0.,
                     "right_shoulder_pitch_joint": 0.,
                     "right_shoulder_roll_joint": 0.,
                     "right_shoulder_yaw_joint": 0.,
@@ -115,7 +114,6 @@ def main():
             custom_config=custom_config,
             demo_mode=True,
         )
-
     for i in range(args_cli.max_iterations):
         _, obs, dones, extras = player.play_once(prep_joint_pos_cmd(player.env, joint_pos_cmd))
         time.sleep(1.0 / CTRL_FREQ)

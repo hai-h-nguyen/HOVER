@@ -29,6 +29,8 @@ from neural_wbc.core.observations import StudentHistory, compute_student_observa
 from neural_wbc.core.robot_wrapper import get_robot_class, get_robot_names
 from neural_wbc.core.termination import check_termination_conditions
 
+import phc.utils.torch_utils as torch_utils
+from neural_wbc.core import math_utils
 
 class NeuralWBCEnv(EnvironmentWrapper):
     """Mujoco Neural WBC Environment
@@ -78,9 +80,27 @@ class NeuralWBCEnv(EnvironmentWrapper):
             device=self.device,
         )
 
-        self._joint_ids = self._robot.get_joint_ids()
-        self._body_ids = self._robot.get_body_ids()
-        self._base_name = "torso_link"
+
+        self._body_ids_original = self._robot.get_body_ids()
+        if cfg.body_names is not None:
+            self._body_ids = {}
+            for k, v in self._body_ids_original.items():
+                if k in cfg.body_names:
+                    self._body_ids[k] = v
+        else:
+            self._body_ids = self._body_ids_original
+
+        self._joint_ids_original = self._robot.get_joint_ids()
+        if cfg.joint_names is not None:
+            self._joint_ids = {}
+            for k, v in self._joint_ids_original.items():
+                if k in cfg.joint_names:
+                    self._joint_ids[k] = v
+        else:
+            self._joint_ids = self._joint_ids_original
+
+        # self._base_name = "torso_link"
+        self._base_name = "pelvis"
         self._base_id = self._body_ids[self._base_name]
 
         self.num_actions = self._robot.num_controls
@@ -95,16 +115,18 @@ class NeuralWBCEnv(EnvironmentWrapper):
         self.episode_length_buf = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
 
         # Resolve the extended bodies
+        self._body_ids_extend = self._body_ids.copy()
         if self.cfg.extend_body_parent_names:
             self.extend_body_parent_ids = [self._body_ids[name] for name in self.cfg.extend_body_parent_names]
             self.extend_body_pos = self.cfg.extend_body_pos.repeat(self.num_envs, 1, 1).to(self.device)
-            for name in self.cfg.extend_body_names:
-                self._body_ids[name] = len(self._body_ids)
+            for i in range(len(self.cfg.extend_body_names)):
+                self._body_ids_extend[self.cfg.extend_body_names[i]] = len(self._body_ids_original) + i
         else:
             self.extend_body_parent_ids = None
             self.extend_body_pos = None
 
-        self._tracked_body_ids = [self._body_ids[name] for name in self.cfg.tracked_body_names]
+        # self._tracked_body_ids = [self._body_ids_extend[name] for name in self.cfg.tracked_body_names]
+        self._tracked_body_ids = [cfg.num_bodies, cfg.num_bodies+1, cfg.num_bodies+2]
 
         # Initialize extras
         self.extras = {}
@@ -432,20 +454,54 @@ class NeuralWBCEnv(EnvironmentWrapper):
             BodyState: Composed body state
         """
         lin_vel, ang_vel = self.robot.body_velocities
+        body_ids = [v for v in self._body_ids.values()]
+        joint_ids = [v for v in self._joint_ids.values()]
         body_state = BodyState(
-            body_pos=self.robot.body_positions,
-            body_rot=self.robot.body_rotations,
-            body_lin_vel=lin_vel,
-            body_ang_vel=ang_vel,
-            joint_pos=self.robot.joint_positions,
-            joint_vel=self.robot.joint_velocities,
+            body_pos=self.robot.body_positions[:, body_ids, :],
+            body_rot=self.robot.body_rotations[:, body_ids, :],
+            body_lin_vel=lin_vel[:, body_ids, :],
+            body_ang_vel=ang_vel[:, body_ids, :],
+            joint_pos=self.robot.joint_positions[:, joint_ids],
+            joint_vel=self.robot.joint_velocities[:, joint_ids],
             root_id=self._base_id,
         )
 
         if (extend_body_pos is not None) and (extend_body_parent_ids is not None):
-            body_state.extend_body_states(
-                extend_body_pos=extend_body_pos, extend_body_parent_ids=extend_body_parent_ids
+            # body_state.extend_body_states(
+            #     extend_body_pos=extend_body_pos, extend_body_parent_ids=extend_body_parent_ids
+            # )
+            if extend_body_pos.shape[1] != len(extend_body_parent_ids):
+                print("[INFO]: extend_body_pos shape:", extend_body_pos.shape)
+                print("[INFO]: extend_body_parent_ids lengths:", len(extend_body_parent_ids))
+                raise ValueError(
+                    "Dimension mismatch: number of extended bodies does not match the length of its parent ID list."
+                )
+
+            num_envs = self.robot.body_positions.shape[0]
+
+            # Compute extended body positions
+            extend_curr_pos = (
+                torch_utils.my_quat_rotate(
+                    math_utils.convert_quat(self.robot.body_rotations[:, extend_body_parent_ids].reshape(-1, 4), to="xyzw"),
+                    extend_body_pos[:,].reshape(-1, 3),
+                ).view(num_envs, -1, 3) + self.robot.body_positions[:, extend_body_parent_ids]
             )
+            body_state.body_pos_extend = torch.cat([body_state.body_pos, extend_curr_pos], dim=1)
+
+            # Compute extended body orientations
+            extend_curr_rot = self.robot.body_rotations[:, extend_body_parent_ids].clone()
+            body_state.body_rot_extend = torch.cat([body_state.body_rot, extend_curr_rot], dim=1)
+
+            # Compute extended body linear velocities
+            body_state.body_lin_vel_extend = torch.cat(
+                [body_state.body_lin_vel, lin_vel[:, extend_body_parent_ids].clone()], dim=1
+            )
+
+            # Compute extended body angular velocities
+            body_state.body_ang_vel_extend = torch.cat(
+                [body_state.body_ang_vel, ang_vel[:, extend_body_parent_ids].clone()], dim=1
+            )
+
         return body_state
 
     def _compute_observations(self):
