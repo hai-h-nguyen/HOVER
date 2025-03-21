@@ -139,8 +139,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.03,
-            friction=0.03,
+            armature=0.01,
+            # friction=0.03,
         ),
         "feet": IdealPDActuatorCfg(
             joint_names_expr=[".*_ankle_roll_joint", ".*_ankle_pitch_joint"],
@@ -151,8 +151,8 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.03,
-            friction=0.03,
+            armature=0.01,
+            # friction=0.03,
         ),
         "arms": IdealPDActuatorCfg(
             joint_names_expr=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", ".*_elbow_joint"],
@@ -170,8 +170,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.03,
-            friction=0.03,
+            armature=0.01,
+            # friction=0.03,
         ),
     }
 )
@@ -192,8 +192,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
     distill_mask_sparsity_randomization_enabled = False
-    # distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
@@ -387,7 +387,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
 
     # Add a height scanner to the torso to detect the height of the terrain mesh
     height_scanner = RayCasterCfg(
-        prim_path="/World/envs/env_.*/Robot/torso_link",
+        prim_path="/World/envs/env_.*/Robot/pelvis",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),
         attach_yaw_only=True,
         # Apply a grid pattern that is smaller than the resolution to only return one height value.
