@@ -32,7 +32,7 @@ class NeuralWBCRewardCfg_G1:
         "reward_track_joint_positions": 0.75,
         "reward_track_joint_velocities": 0.5,
         "penalize_torques": -0.000001,
-        "penalize_action_changes": -0.1,
+        "penalize_action_changes": -0.15,
         "penalize_feet_orientation": -2.0,
         "penalize_feet_heading_alignment": -0.1,
         "penalize_slippage": -1.0,
