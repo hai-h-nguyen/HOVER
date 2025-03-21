@@ -32,6 +32,9 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     ctrl_delay_step_range = [2, 2]
     default_rfi_lim = 0
     robot = "mujoco_robot"
+    
+    body_names = None
+    joint_names = None
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "pelvis"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
