@@ -42,7 +42,7 @@ class UnitreeH1(Robot):
         self._h1_sdk = H1SDKWrapper(cfg=cfg)
         self.device = device
         self.send_command = self._resolve_command_fn(robot_actuation_type=cfg.robot_actuation_type)
-
+        # import ipdb; ipdb.set_trace()
         self._kinematic_model = WBCMujoco(
             model_path=cfg.model_xml_path,
             sim_dt=cfg.dt,
@@ -120,7 +120,7 @@ class UnitreeH1(Robot):
         self._kinematic_model.reset(qpos=qpos, qvel=qvel)
 
         joint_positions = qpos[..., self._kinematic_model.joint_pos_offset :]
-        joint_positions_np = joint_positions.numpy()
+        joint_positions_np = joint_positions.cpu().numpy()
 
         # Reset robot pose
         self._h1_sdk.reset(joint_positions_np)
@@ -203,7 +203,7 @@ class UnitreeH1(Robot):
         """
         # Get torso orientation in quaternion [w, x, y, z]
         torso_orientation_quat = self._h1_sdk.torso_orientation
-
+        # import ipdb; ipdb.set_trace()
         # Create rotation matrix from quaternion
         torso_rot_mat_np = R.from_quat(torso_orientation_quat, scalar_first=True).as_matrix()
         torso_rot_mat = torch.tensor(torso_rot_mat_np, device=self.device, dtype=torch.float32)

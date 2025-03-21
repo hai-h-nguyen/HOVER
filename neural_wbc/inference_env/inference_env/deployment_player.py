@@ -67,7 +67,7 @@ class DeploymentPlayer:
             self._update_env_cfg(env_cfg=env_cfg, custom_config=custom_config)
 
         # Creates inference environment
-        self.env = NeuralWBCEnv(cfg=env_cfg)
+        self.env = NeuralWBCEnv(cfg=env_cfg)  # plus reset the environment
 
         assert self.env.cfg.control_type in [
             "Pos",
@@ -103,7 +103,7 @@ class DeploymentPlayer:
                 actions = ext_actions
             else:
                 actions = self.policy(obs)
-            _, obs, dones, extras = self.env.step(actions)  # For HW, this internally just does forward
+            _, obs, dones, extras = self.env.step(actions)  # For HW, this internally just does forward and sends commands
         return actions, obs, dones, extras
 
     def reset(self):

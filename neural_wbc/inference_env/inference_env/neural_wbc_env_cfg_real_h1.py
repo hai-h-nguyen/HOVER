@@ -59,7 +59,7 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
     robot_actuation_type: Literal["Pos", "Torque"] = "Pos"
 
     # hardware parameters
-    network_interface = "enx0c3796b54c40"
+    network_interface = "lo"
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
     subscriber_freq = 10
@@ -79,8 +79,8 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
     # Stiffness and damping parameters
     kp_low = 60.0
     kp_high = 200.0
-    kd_low = 1.5
-    kd_high = 5.0
+    kd_low = 1.5 * 1.5
+    kd_high = 5.0 * 1.5
 
     JointSeq2MotorID = [
         7,
@@ -315,5 +315,6 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
     upper_body_joint_ids = [10, 11, 12, 13, 14, 15, 16, 17, 18]  # torso, shoulders, elbows
 
     def __post_init__(self):
+        self.reference_motion_cfg.robot_name = "h1"
         self.reference_motion_cfg.motion_path = get_data_path("motions/stable_punch.pkl")
         self.reference_motion_cfg.skeleton_path = get_data_path("motion_lib/h1.xml")

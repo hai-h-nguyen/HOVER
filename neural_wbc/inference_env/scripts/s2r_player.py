@@ -20,8 +20,10 @@ import torch
 import yaml
 
 from hw_wrappers.unitree_h1 import UnitreeH1  # noqa
+from hw_wrappers.unitree_g1 import UnitreeG1  # noqa
 from inference_env.deployment_player import DeploymentPlayer
 from inference_env.neural_wbc_env_cfg_real_h1 import NeuralWBCEnvCfgRealH1
+from inference_env.neural_wbc_env_cfg_real_g1 import NeuralWBCEnvCfgRealG1
 from inference_env.utils import get_player_args
 
 from neural_wbc.data import get_data_path
@@ -39,7 +41,10 @@ def main():
         print("[INFO]: Using custom configuration:")
         pprint.pprint(custom_config)
 
-    env_cfg = NeuralWBCEnvCfgRealH1(model_xml_path=get_data_path("mujoco/models/scene.xml"))
+    if args_cli.robot == "unitree_h1":
+        env_cfg = NeuralWBCEnvCfgRealH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"))
+    if args_cli.robot == "unitree_g1":
+        env_cfg = NeuralWBCEnvCfgRealG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"))
 
     player = DeploymentPlayer(
         args_cli=args_cli,
