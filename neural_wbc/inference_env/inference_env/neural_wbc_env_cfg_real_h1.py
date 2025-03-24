@@ -59,7 +59,7 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
     robot_actuation_type: Literal["Pos", "Torque"] = "Pos"
 
     # hardware parameters
-    network_interface = "enx0c3796b54c40"
+    network_interface = "lo"
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
     subscriber_freq = 10
@@ -79,8 +79,8 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
     # Stiffness and damping parameters
     kp_low = 60.0
     kp_high = 200.0
-    kd_low = 1.5
-    kd_high = 5.0
+    kd_low = 1.5 * 1.5
+    kd_high = 5.0 * 1.5
 
     JointSeq2MotorID = [
         7,

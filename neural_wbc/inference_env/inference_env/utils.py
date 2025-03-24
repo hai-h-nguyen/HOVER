@@ -25,6 +25,7 @@ def get_player_args(description: str):
     parser.add_argument("--student_checkpoint", type=str, default=None, help="The exact checkpoint.")
     parser.add_argument("--robot", type=str, default="mujoco_robot", help="The name of registered robot class.")
     parser.add_argument("--max_iterations", type=int, default=100, help="Number steps to run the demo example.")
+    # parser.add_argument("--robot_name",  type=str, default="h1", help="The name of the robot.")
     parser.add_argument(
         "--env_config_overwrite",
         type=str,

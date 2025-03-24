@@ -194,6 +194,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     distill_mask_sparsity_randomization_enabled = False
     distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
     # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
@@ -312,6 +314,10 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_ankle_pitch_joint": 40.0,
         "left_ankle_roll_joint": 40.0,
 
+        "left_knee_joint": 150.0,
+        "left_ankle_pitch_joint": 40.0,
+        "left_ankle_roll_joint": 40.0,
+
         "right_hip_pitch_joint": 100.0,
         "right_hip_roll_joint": 100.0,
         "right_hip_yaw_joint": 100.0,
@@ -362,7 +368,11 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_shoulder_roll_joint": 2.0,
         "right_shoulder_yaw_joint": 2.0,
         "right_elbow_joint": 2.0,
+        "right_shoulder_roll_joint": 2.0,
+        "right_shoulder_yaw_joint": 2.0,
+        "right_elbow_joint": 2.0,
     }
+
 
     mass_randomized_body_names = [
         "pelvis",
@@ -394,6 +404,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
 
     # Add a height scanner to the torso to detect the height of the terrain mesh
     height_scanner = RayCasterCfg(
+        prim_path="/World/envs/env_.*/Robot/pelvis",
         prim_path="/World/envs/env_.*/Robot/pelvis",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),
         attach_yaw_only=True,

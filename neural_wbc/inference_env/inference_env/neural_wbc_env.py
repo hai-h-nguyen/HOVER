@@ -549,7 +549,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
         # The angular velocity from the Unitree H1 IMU is already provided in the robot's local frame.
         # However, in MuJoCo, the angular velocity in the local frame must be computed using world frame mjc body data.
         local_base_ang_velocity = (
-            self.robot.get_base_angular_velocity(self._base_name) if self.cfg.robot == "unitree_h1" else None
+            self.robot.get_base_angular_velocity(self._base_name) if (self.cfg.robot == "unitree_h1" or self.cfg.robot == "unitree_g1") else None
         )
         student_obs, student_obs_dict = compute_student_observations(
             base_id=self._base_id,
@@ -562,9 +562,10 @@ class NeuralWBCEnv(EnvironmentWrapper):
             mask=self._mask,
             local_base_ang_velocity=local_base_ang_velocity,
         )
+        
         obs_dict.update(student_obs_dict)
         obs_dict["student_policy"] = student_obs
-
+        # import ipdb; ipdb.set_trace()
         return obs_dict
 
     def _compute_extras(self) -> dict:
