@@ -18,8 +18,7 @@ from dataclasses import dataclass
 from typing import List
 
 # TODO: Replace MotionLibH1 with the agnostic version when it's ready.
-from phc.utils.motion_lib_h1 import MotionLibH1
-from phc.utils.motion_lib_g1 import MotionLibG1
+from phc.utils.motion_lib_h1 import MotionLibH1, MotionLibG1, MotionLibH12
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 
 
@@ -106,6 +105,16 @@ class ReferenceMotionManager:
 
         if cfg.robot_name == "h1":
             self._motion_lib = MotionLibH1(
+                motion_file=cfg.motion_path,
+                device=self._device,
+                num_envs=num_envs,
+                fix_height=False,
+                multi_thread=False,
+                skeleton_file=cfg.skeleton_path,
+                extend_head=extend_head,
+            )
+        elif cfg.robot_name == "h12":
+            self._motion_lib = MotionLibH12(
                 motion_file=cfg.motion_path,
                 device=self._device,
                 num_envs=num_envs,
