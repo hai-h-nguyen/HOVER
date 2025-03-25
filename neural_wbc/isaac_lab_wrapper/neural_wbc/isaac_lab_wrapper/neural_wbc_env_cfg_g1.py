@@ -405,7 +405,6 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # Add a height scanner to the torso to detect the height of the terrain mesh
     height_scanner = RayCasterCfg(
         prim_path="/World/envs/env_.*/Robot/pelvis",
-        prim_path="/World/envs/env_.*/Robot/pelvis",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.0)),
         attach_yaw_only=True,
         # Apply a grid pattern that is smaller than the resolution to only return one height value.

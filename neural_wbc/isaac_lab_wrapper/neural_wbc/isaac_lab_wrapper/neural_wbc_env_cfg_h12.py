@@ -39,8 +39,8 @@ DISTILL_MASK_MODES_ALL = {
         "lower_body": ["root.*"],
     },
     "humanplus": {
-        "upper_body": [".torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
-        "lower_body": ["waist.*joint.*", ".*hip.*joint.*", ".*knee.*joint.*", ".*ankle.*joint.*", "root.*"],
+        "upper_body": [".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": [".*hip.*joint.*", ".*knee.*joint.*", ".*ankle.*joint.*", "root.*"],
     },
     "h2o": {
         "upper_body": [
@@ -85,16 +85,16 @@ H12_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 1.03),
         joint_pos={
+                    "left_hip_yaw_joint": 0.,
                     "left_hip_pitch_joint": -0.1,
                     "left_hip_roll_joint": 0.,
-                    "left_hip_yaw_joint": 0.,
                     "left_knee_joint": 0.3,
                     "left_ankle_pitch_joint": -0.2,
                     "left_ankle_roll_joint": 0.,
 
+                    "right_hip_yaw_joint": 0.,
                     "right_hip_pitch_joint": -0.1,
                     "right_hip_roll_joint": 0.,
-                    "right_hip_yaw_joint": 0.,
                     "right_knee_joint": 0.3,
                     "right_ankle_pitch_joint": -0.2,
                     "right_ankle_roll_joint": 0.,
@@ -119,15 +119,15 @@ H12_CFG = ArticulationCfg(
             joint_names_expr=[".*_hip_yaw_joint", ".*_hip_roll_joint", ".*_hip_pitch_joint", ".*_knee_joint", "torso_joint"],
             effort_limit={
                 ".*_hip_yaw_joint": 200.0,
-                ".*_hip_roll_joint": 200.0,
                 ".*_hip_pitch_joint": 200.0,
+                ".*_hip_roll_joint": 200.0,
                 ".*_knee_joint": 300.0,
                 "torso_joint": 200.0,
             },
             velocity_limit={
                 ".*_hip_yaw_joint": 23.0,
-                ".*_hip_roll_joint": 23.0,
                 ".*_hip_pitch_joint": 23.0,
+                ".*_hip_roll_joint": 23.0,
                 ".*_knee_joint": 14.0,
                 "torso_joint": 23.0,
             },
@@ -179,7 +179,7 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
     state_space = 1076
 
     # Distillation parameters:
-    single_history_dim = 75
+    single_history_dim = 69
     observation_history_length = 25
 
     # Mask setup for an OH2O specialist policy as default:
@@ -258,8 +258,8 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
     ]
 
     # Lower and upper body joint ids in the MJCF model.
-    lower_body_joint_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # hips, knees, ankles, torso
-    upper_body_joint_ids = [15, 16, 17, 18, 19, 20, 21, 22]  # shoulders, elbows
+    lower_body_joint_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]  # hips, knees, ankles
+    upper_body_joint_ids = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]  # torso, shoulders, elbows
 
     base_name = "torso_link"
     root_id = body_names.index(base_name)
@@ -268,7 +268,7 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
-    extend_body_pos = torch.tensor([[0.25, 0, 0], [0.25, 0, 0], [0, 0, 0.42]])
+    extend_body_pos = torch.tensor([[0.25, 0, 0], [0.25, 0, 0], [0, 0, 0.7]])
 
     # These are the bodies that are tracked by the teacher. They may also contain the extended
     # bodies.
