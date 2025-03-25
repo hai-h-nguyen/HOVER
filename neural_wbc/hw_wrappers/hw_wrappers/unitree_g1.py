@@ -51,6 +51,9 @@ class UnitreeG1(Robot):
             key = self.cfg.joint_names[i]
             self._lower_position_limit[i] = self.cfg.position_limit[key][0]
             self._upper_position_limit[i] = self.cfg.position_limit[key][1]
+
+        self._g1_sdk = G1SDKWrapper(cfg=cfg)
+        self.device = device
         self.send_command = self._resolve_command_fn(robot_actuation_type=cfg.robot_actuation_type)
         # import ipdb; ipdb.set_trace()
         self._kinematic_model = WBCMujoco(
@@ -92,7 +95,7 @@ class UnitreeG1(Robot):
         """Applies effort limits to the actions."""
         actions = np.clip(actions, -self._effort_limit, self._effort_limit)
         return actions
-       
+
     def update(self, obs_dict: dict[str, torch.Tensor]) -> None:
         """Update the underlying model based on the observations from the environment/real robot.
 
@@ -149,6 +152,7 @@ class UnitreeG1(Robot):
     def _send_torque_command(self, torques: np.ndarray | None = None) -> None:
         """Send torque commands to the robot"""
         if torques:
+
             torques = np.clip(torques, -self._effort_limits, self._effort_limits)
             self._g1_sdk.publish_joint_torque_cmd(torques.flatten())
 

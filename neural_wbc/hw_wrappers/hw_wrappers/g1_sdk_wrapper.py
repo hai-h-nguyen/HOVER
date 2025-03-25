@@ -106,6 +106,7 @@ class G1SDKWrapper:
     def init_cmd_hg(self, cmd: LowCmd_, mode_machine: int, mode_pr: int):
         cmd.mode_machine = mode_machine
         cmd.mode_pr = mode_pr
+
         for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
             cmd.motor_cmd[i].mode = 1
             cmd.motor_cmd[i].q = 0.
@@ -113,6 +114,7 @@ class G1SDKWrapper:
             cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
             cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
             cmd.motor_cmd[i].tau = 0.
+
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -157,7 +159,9 @@ class G1SDKWrapper:
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
+
     def reset(self, desired_qpos: np.ndarray | None = None) -> None:
+
         """Resets the robot to the given joint positions.
 
         Args:
@@ -193,6 +197,12 @@ class G1SDKWrapper:
 
         desired_joint_positions = desired_qpos.flatten()
         desired_joint_positions[10] = -0.3
+        # desired_joint_positions = desired_joint_positions.flatten()
+        if desired_joint_positions is None:
+            desired_joint_positions = np.zeros(self.cfg.num_joints)
+        print("Resetting G1 to given pose.")
+        print("desired_joint_positions: ", desired_joint_positions)
+
         while self.time_ < self.duration_:
             self.time_ += self.control_dt_
             ratio = self.time_ / self.duration_
