@@ -52,7 +52,7 @@ def compute_student_observations(
         "distilled_last_action": last_actions,
         "distilled_historical_info": history,
     }
-
+    
     obs = torch.cat(
         [tensor for tensor in obs_dict.values()],
         dim=-1,

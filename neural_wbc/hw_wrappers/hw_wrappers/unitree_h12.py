@@ -20,7 +20,7 @@ import torch
 from scipy.spatial.transform import Rotation as R
 from typing import Any, Literal
 
-from hw_wrappers.g1_sdk_wrapper import G1SDKWrapper
+from hw_wrappers.h12_sdk_wrapper import H12SDKWrapper
 from mujoco_wrapper.mujoco_simulator import WBCMujoco
 
 from neural_wbc.core.robot_wrapper import Robot, register_robot
@@ -51,6 +51,7 @@ class UnitreeG1(Robot):
             self._lower_position_limit[i] = self.cfg.position_limit[key][0]
             self._upper_position_limit[i] = self.cfg.position_limit[key][1]
 
+        self._h12_sdk = H12SDKWrapper(cfg=cfg)
         self.device = device
         self.send_command = self._resolve_command_fn(robot_actuation_type=cfg.robot_actuation_type)
         # import ipdb; ipdb.set_trace()
@@ -72,8 +73,6 @@ class UnitreeG1(Robot):
 
         self.joint_pos_offset = self._kinematic_model.joint_pos_offset
         self.joint_vel_offset = self._kinematic_model.joint_vel_offset
-
-        self._g1_sdk = G1SDKWrapper(cfg=self.cfg)
 
     def _resolve_command_fn(
         self,
@@ -115,10 +114,10 @@ class UnitreeG1(Robot):
 
         # Get state from the robot
         self._joint_positions = (
-            torch.from_numpy(self._g1_sdk.joint_positions).unsqueeze(0).to(dtype=torch.float32, device=self.device)
+            torch.from_numpy(self._h12_sdk.joint_positions).unsqueeze(0).to(dtype=torch.float32, device=self.device)
         )
         self._joint_velocities = (
-            torch.from_numpy(self._g1_sdk.joint_velocities).unsqueeze(0).to(dtype=torch.float32, device=self.device)
+            torch.from_numpy(self._h12_sdk.joint_velocities).unsqueeze(0).to(dtype=torch.float32, device=self.device)
         )
 
         qpos = torch.hstack((self._root_position, self._root_rotation, self._joint_positions))
@@ -146,7 +145,7 @@ class UnitreeG1(Robot):
         joint_positions_np = joint_positions.cpu().numpy()
 
         # Reset robot pose
-        self._g1_sdk.reset(joint_positions_np)
+        self._h12_sdk.reset(joint_positions_np)
         self.update({})
 
     def _send_torque_command(self, torques: np.ndarray | None = None) -> None:
@@ -154,13 +153,13 @@ class UnitreeG1(Robot):
         if torques:
 
             torques = np.clip(torques, -self._effort_limits, self._effort_limits)
-            self._g1_sdk.publish_joint_torque_cmd(torques.flatten())
+            self._h12_sdk.publish_joint_torque_cmd(torques.flatten())
 
     def _send_position_command(self, positions: np.ndarray | None = None) -> None:
         """Send position commands to the robot"""
         if positions is not None:
             positions = np.clip(positions, self._lower_position_limit, self._upper_position_limit)
-            self._g1_sdk.publish_joint_position_cmd(positions.flatten())
+            self._h12_sdk.publish_joint_position_cmd(positions.flatten())
 
     def visualize(self, **payload) -> None:
         """Visualize some info
@@ -228,7 +227,7 @@ class UnitreeG1(Robot):
             torch.Tensor: Projection of the gravity vector to the base frame
         """
         # Get torso orientation in quaternion [w, x, y, z]
-        torso_orientation_quat = self._g1_sdk.torso_orientation
+        torso_orientation_quat = self._h12_sdk.torso_orientation
         # import ipdb; ipdb.set_trace()
         # Create rotation matrix from quaternion
         torso_rot_mat_np = R.from_quat(torso_orientation_quat, scalar_first=True).as_matrix()
@@ -251,7 +250,7 @@ class UnitreeG1(Robot):
         Returns:
             torch.Tensor: Angular velocity of the base
         """
-        return torch.tensor(self._g1_sdk.torso_angular_velocity, device=self.device, dtype=torch.float32).unsqueeze(0)
+        return torch.tensor(self._h12_sdk.torso_angular_velocity, device=self.device, dtype=torch.float32).unsqueeze(0)
 
     def get_terrain_heights(self) -> torch.Tensor:
         """Get the terrain height.

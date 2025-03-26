@@ -98,6 +98,8 @@ class DeploymentPlayer:
     def play_once(self, ext_actions: torch.Tensor | None = None):
         """Advances the environment one time step after generating observations"""
         obs = self.env.get_observations()
+        # obs = torch.ones_like(obs)
+        # import ipdb; ipdb.set_trace()
         with torch.inference_mode():
             if ext_actions is not None:
                 actions = ext_actions

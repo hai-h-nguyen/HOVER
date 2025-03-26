@@ -61,10 +61,9 @@ class G1SDKWrapper:
             interval=self._cmd_publish_dt, target=self._cmd_publisher, name="control_loop"
         )
         self._cmd_publisher_thread_ptr.Start()
-        print("G1 SDK Wrapper initialized.")
+        print("H12 SDK Wrapper initialized.")
 
         # import ipdb; ipdb.set_trace()
-        self.first_time = 1
 
     def _cmd_publisher(self):
         """Publishes the low-level command to the SDK."""
@@ -107,17 +106,18 @@ class G1SDKWrapper:
     def init_cmd_hg(self, cmd: LowCmd_, mode_machine: int, mode_pr: int):
         cmd.mode_machine = mode_machine
         cmd.mode_pr = mode_pr
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
 
         for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
-            # print("motor_name: ", motor_name)
-            # print("i: ", i)
+            print("motor_name: ", motor_name)
+            print("i: ", i)
             cmd.motor_cmd[i].mode = 1
             cmd.motor_cmd[i].q = 0.
             cmd.motor_cmd[i].qd = 0.
             cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
             cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
-            cmd.motor_cmd[i].tau = 0.        
+            cmd.motor_cmd[i].tau = 0.
+        import ipdb; ipdb.set_trace()
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -134,13 +134,7 @@ class G1SDKWrapper:
         Args:
             cmd_joint_positions (np.ndarray): An array of joint positions to be published.
         """
-        # RESET SIM STATE BEFORE RUNNING POLICY, trigger by sending mode 0 to the first motor
-        if self.first_time > 0:
-            self.first_time -=1
-            self._low_cmd.motor_cmd[0].mode = 0
-        else:
-            self._low_cmd.motor_cmd[0].mode = 1
-
+        # print("cmd_joint_positions: ", cmd_joint_positions)
         with self._low_cmd_lock:
             for joint_idx in range(self.cfg.num_joints):
                 motor_idx = self.cfg.JointSeq2MotorID[joint_idx]
@@ -148,6 +142,7 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._low_cmd.motor_cmd[motor_idx].tau = 0.0
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
+            print("self._low_cmd: ", self._low_cmd.motor_cmd[12].q, self._low_cmd.motor_cmd[13].q, self._low_cmd.motor_cmd[14].q)
             self._cmd_received = True
 
     def publish_joint_torque_cmd(self, cmd_joint_torques: np.ndarray):
@@ -208,7 +203,7 @@ class G1SDKWrapper:
         # desired_joint_positions = desired_joint_positions.flatten()
         if desired_joint_positions is None:
             desired_joint_positions = np.zeros(self.cfg.num_joints)
-        print("Resetting G1 to given pose.")
+        print("Resetting H12 to given pose.")
         print("desired_joint_positions: ", desired_joint_positions)
 
         while self.time_ < self.duration_:

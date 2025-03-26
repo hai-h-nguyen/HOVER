@@ -745,3 +745,20 @@ class NeuralWBCRewards_G1(NeuralWBCRewards):
         """
         # Joints 15 - 22 are upper body joints in Isaac Gym.
         return torch.sum(torch.square(previous_actions[:, 15:] - actions[:, 15:]), dim=1)
+    
+    def penalize_waist_deviation(
+        self,
+        body_state: BodyState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty for deviation of the waist from zeros.
+
+        This function is adapted from _reward_waist_deviation in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        waist_pos = body_state.joint_pos[:, 13:15]
+        return torch.sum(torch.square(waist_pos), dim=1)
+    

@@ -65,7 +65,7 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
     subscriber_freq = 10
-    reset_duration = 2.0  # seconds
+    reset_duration = 0.0  # seconds
     reset_step_dt = 0.01  # seconds
     robot_command_mode = "position"  # position or torque
     gravity_value = -9.8  # m/s^2
