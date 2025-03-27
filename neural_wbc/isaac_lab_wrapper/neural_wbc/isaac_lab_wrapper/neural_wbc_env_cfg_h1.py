@@ -33,7 +33,7 @@ from .terrain import HARD_ROUGH_TERRAINS_CFG, flat_terrain
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -42,7 +42,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder.*link.*",
+            ".*shoulder_roll_link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],

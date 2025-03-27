@@ -53,6 +53,16 @@ class RefMotionVisualizer:
         self._inactive_ref_motion_markers = VisualizationMarkers(inactive_marker_cfg)
         self._inactive_ref_motion_markers.set_visibility(True)
 
+        # Visualizere for the reference joint angles.
+        joint_angle_marker_cfg = DEFORMABLE_TARGET_MARKER_CFG.copy()
+        joint_angle_marker_cfg.markers["target"].radius = 0.03
+        joint_angle_marker_cfg.markers["target"].visual_material = sim_utils.PreviewSurfaceCfg(
+            diffuse_color=(0.0, 1.0, 0.0)
+        )  # green
+        joint_angle_marker_cfg.prim_path = "/Visuals/Command/ref_joint_angle"
+        self.ref_joint_angle_markers = VisualizationMarkers(joint_angle_marker_cfg)
+        self.ref_joint_angle_markers.set_visibility(True)
+
         # Visualize for the root arrow
         root_marker_cfg = VisualizationMarkersCfg()
         root_marker_cfg.prim_path = "/Visuals/Command/root_direction"
@@ -77,7 +87,8 @@ class RefMotionVisualizer:
             active_body_pos = ref_motion.body_pos_extend.view(-1, 3)
             device = active_body_pos.device
             inactive_body_pos = torch.zeros(0, 3, device=device)
-            root_rot = torch.zeros(0, 4, device=device)
+            active_joint_angle_pos = torch.zeros(0, 1, device=device)
+            root_pos = torch.zeros(0, 4, device=device)
         else:
             num_bodies = ref_motion.body_pos_extend.shape[1]
             mask_keypoints = mask[:, :num_bodies]
@@ -87,8 +98,15 @@ class RefMotionVisualizer:
             active_body_pos = ref_motion.body_pos_extend.view(-1, 3)[mask_keypoints_flat, :]
             inactive_body_pos = ref_motion.body_pos_extend.view(-1, 3)[~mask_keypoints_flat, :]
 
+            mask_joint_angles = torch.cat([torch.zeros((mask.shape[0], 1), device=mask.device).to(bool), mask[:, num_bodies:-7]], dim=1)
+
+            mask_joint_angles_flat = mask_joint_angles.flatten()
+            active_joint_angle_pos = ref_motion.body_pos.view(-1, 3)[mask_joint_angles_flat, :]
+            active_joint_angle_pos[:, 2] += 0.01
+
             active_root = torch.where(mask[:, -7:].sum(dim=1) > 0)[0]
             root_pos = ref_motion.root_pos.view(-1, 3)[active_root, :]
+            root_pos[:, 2] += 1.0
             root_rot = ref_motion.root_rot.view(-1, 4)[active_root, :]
 
         # Update the position of the visualization markers.
@@ -106,6 +124,14 @@ class RefMotionVisualizer:
         else:
             self._inactive_ref_motion_markers.set_visibility(False)
 
-        if root_rot.shape[0] != 0:
+        if active_joint_angle_pos.shape[0] != 0:
+            self.ref_joint_angle_markers.set_visibility(True)
+            self.ref_joint_angle_markers.visualize(active_joint_angle_pos)
+        else:
+            self.ref_joint_angle_markers.set_visibility(False)
+
+        if root_pos.shape[0] != 0:
             self.root_markers.set_visibility(True)
             self.root_markers.visualize(root_pos, root_rot)
+        else:
+            self.root_markers.set_visibility(False)

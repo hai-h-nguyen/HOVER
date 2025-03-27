@@ -47,7 +47,7 @@ def main():
     elif args_cli.robot_model == "h12":
         env_cfg=NeuralWBCEnvCfgH12(model_xml_path=get_data_path("mujoco/models/h12/scene.xml"))
     elif args_cli.robot_model == "g1":
-        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml")),
+        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"))
     else:
         raise ValueError
     

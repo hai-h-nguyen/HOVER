@@ -35,7 +35,7 @@ from .rewards import NeuralWBCRewardCfg_G1
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -44,7 +44,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder.*link.*",
+            ".*shoulder_roll_link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],
@@ -139,8 +139,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.01,
-            friction=0.01,
+            armature=0.0001,
+            friction=0.0001,
         ),
         "feet": IdealPDActuatorCfg(
             joint_names_expr=[".*_ankle_roll_joint", ".*_ankle_pitch_joint"],
@@ -151,8 +151,8 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.01,
-            friction=0.01,
+            armature=0.0001,
+            friction=0.0001,
         ),
         "arms": IdealPDActuatorCfg(
             joint_names_expr=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", ".*_elbow_joint"],
@@ -170,8 +170,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.01,
-            friction=0.01,
+            armature=0.0001,
+            friction=0.0001,
         ),
     }
 )
@@ -192,8 +192,6 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
-    # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
     distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
     # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
@@ -310,10 +308,6 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_hip_pitch_joint": 100.0,
         "left_hip_roll_joint": 100.0,
         "left_hip_yaw_joint": 100.0,
-        "left_knee_joint": 150.0,
-        "left_ankle_pitch_joint": 40.0,
-        "left_ankle_roll_joint": 40.0,
-
         "left_knee_joint": 150.0,
         "left_ankle_pitch_joint": 40.0,
         "left_ankle_roll_joint": 40.0,

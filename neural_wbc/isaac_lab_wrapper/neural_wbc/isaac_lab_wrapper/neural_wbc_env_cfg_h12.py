@@ -35,7 +35,7 @@ from .rewards import NeuralWBCRewardCfg_H12
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -44,7 +44,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder.*link.*",
+            ".*shoulder_roll_link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],
@@ -187,7 +187,7 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
     distill_mask_sparsity_randomization_enabled = False
     distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
-    # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    # distill_mask_modes = {"exbody": DISTILL_MASK_MODES_ALL["exbody"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],

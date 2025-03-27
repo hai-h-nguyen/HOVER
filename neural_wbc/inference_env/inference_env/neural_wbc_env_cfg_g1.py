@@ -113,60 +113,60 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_hip_pitch_joint": 100.0,
         "left_hip_roll_joint": 100.0,
         "left_hip_yaw_joint": 100.0,
-        "left_knee_joint": 200.0,
-        "left_ankle_pitch_joint": 20.0,
-        "left_ankle_roll_joint": 20.0,
+        "left_knee_joint": 150.0,
+        "left_ankle_pitch_joint": 40.0,
+        "left_ankle_roll_joint": 40.0,
 
         "right_hip_pitch_joint": 100.0,
         "right_hip_roll_joint": 100.0,
         "right_hip_yaw_joint": 100.0,
-        "right_knee_joint": 200.0,
-        "right_ankle_pitch_joint": 20.0,
-        "right_ankle_roll_joint": 20.0,
+        "right_knee_joint": 150.0,
+        "right_ankle_pitch_joint": 40.0,
+        "right_ankle_roll_joint": 40.0,
         
-        "waist_yaw_joint": 400,
-        "waist_roll_joint": 400,
-        "waist_pitch_joint": 400,
+        "waist_yaw_joint": 300,
+        "waist_roll_joint": 300,
+        "waist_pitch_joint": 300,
         
-        "left_shoulder_pitch_joint": 90.0,
-        "left_shoulder_roll_joint": 60.0,
-        "left_shoulder_yaw_joint": 20.0,
-        "left_elbow_joint": 60.0,
+        "left_shoulder_pitch_joint": 100.0,
+        "left_shoulder_roll_joint": 100.0,
+        "left_shoulder_yaw_joint": 50.0,
+        "left_elbow_joint": 50.0,
         
-        "right_shoulder_pitch_joint": 90.0,
-        "right_shoulder_roll_joint": 60.0,
-        "right_shoulder_yaw_joint": 20.0,
-        "right_elbow_joint": 60.0,
+        "right_shoulder_pitch_joint": 100.0,
+        "right_shoulder_roll_joint": 100.0,
+        "right_shoulder_yaw_joint": 50.0,
+        "right_elbow_joint": 50.0,
     }
 
     damping = {
-        "left_hip_pitch_joint": 2.5,
-        "left_hip_roll_joint": 2.5,
-        "left_hip_yaw_joint": 2.5,
-        "left_knee_joint": 5.0,
-        "left_ankle_pitch_joint": 0.2,
-        "left_ankle_roll_joint": 0.1,
+        "left_hip_pitch_joint": 2.0,
+        "left_hip_roll_joint": 2.0,
+        "left_hip_yaw_joint": 2.0,
+        "left_knee_joint": 4.0,
+        "left_ankle_pitch_joint": 2.0,
+        "left_ankle_roll_joint": 2.0,
 
-        "right_hip_pitch_joint": 2.5,
-        "right_hip_roll_joint": 2.5,
-        "right_hip_yaw_joint": 2.5,
-        "right_knee_joint": 5.0,
-        "right_ankle_pitch_joint": 0.2,
-        "right_ankle_roll_joint": 0.1,
+        "right_hip_pitch_joint": 2.0,
+        "right_hip_roll_joint": 2.0,
+        "right_hip_yaw_joint": 2.0,
+        "right_knee_joint": 4.0,
+        "right_ankle_pitch_joint": 2.0,
+        "right_ankle_roll_joint": 2.0,
         
-        "waist_yaw_joint": 5.0,
-        "waist_roll_joint": 5.0,
-        "waist_pitch_joint": 5.0,
+        "waist_yaw_joint": 3.0,
+        "waist_roll_joint": 3.0,
+        "waist_pitch_joint": 3.0,
         
         "left_shoulder_pitch_joint": 2.0,
-        "left_shoulder_roll_joint": 1.0,
-        "left_shoulder_yaw_joint": 0.4,
-        "left_elbow_joint": 1.0,
+        "left_shoulder_roll_joint": 2.0,
+        "left_shoulder_yaw_joint": 2.0,
+        "left_elbow_joint": 2.0,
         
         "right_shoulder_pitch_joint": 2.0,
-        "right_shoulder_roll_joint": 1.0,
-        "right_shoulder_yaw_joint": 0.4,
-        "right_elbow_joint": 1.0,
+        "right_shoulder_roll_joint": 2.0,
+        "right_shoulder_yaw_joint": 2.0,
+        "right_elbow_joint": 2.0,
     }
 
     effort_limit = {
@@ -270,5 +270,5 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
 
     def __post_init__(self):
         self.reference_motion_cfg.robot_name = "g1"
-        self.reference_motion_cfg.motion_path = get_data_path("motions/amass_full_g1_anneal.pkl")
+        self.reference_motion_cfg.motion_path = get_data_path("motions/g1_test.pkl")
         self.reference_motion_cfg.skeleton_path = get_data_path("motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml")
