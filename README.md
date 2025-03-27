@@ -121,6 +121,11 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
 ```
 You can add the flag `--headless` to train without GUI rendering.
 
+Training Visualization
+```
+ ${ISAACLAB_PATH:?}/isaaclab.sh  -p -m tensorboard.main --logdir=[log_folder]
+```
+
 
 ## Student Policy
 
@@ -130,7 +135,7 @@ In the project's root directory,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
     --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
-    --teacher_policy.resume_path logs/teacher/<date_time> \
+    --teacher_policy.resume_path [log_folder] \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
@@ -140,7 +145,7 @@ Similarly, for Unitree-G1,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_student_policy.py \
     --num_envs 1024 \
     --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
-    --teacher_policy.resume_path logs/teacher/<date_time> \
+    --teacher_policy.resume_path [log_folder] \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot g1
 ```
@@ -165,7 +170,7 @@ The exact path of the teacher policy does not matter, but it is recommended to s
     ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
         --num_envs 10 \
         --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
-        --teacher_policy.resume_path logs/teacher/<date_time> \
+        --teacher_policy.resume_path [log_folder] \
         --teacher_policy.checkpoint model_<iteration_number>.pt \
         --robot h1
     ```
@@ -174,7 +179,7 @@ The exact path of the teacher policy does not matter, but it is recommended to s
     ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/train_teacher_policy.py \
         --num_envs 10 \
         --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
-        --teacher_policy.resume_path logs/teacher/<date_time> \
+        --teacher_policy.resume_path [log_folder] \
         --teacher_policy.checkpoint model_<iteration_number>.pt \
         --robot g1
     ```
@@ -227,7 +232,7 @@ In the project's root directory,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
-    --teacher_policy.resume_path logs/teacher/<date_time>  \
+    --teacher_policy.resume_path [log_folder]  \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
@@ -236,7 +241,7 @@ or
 ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
-    --teacher_policy.resume_path logs/teacher/<date_time>  \
+    --teacher_policy.resume_path [log_folder]  \
     --teacher_policy.checkpoint model_<iteration_number>.pt \
     --robot g1
 ```
@@ -250,7 +255,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/h1_test.pkl \
     --student_player \
-    --student_path logs/student/<date_time>  \
+    --student_path [log_folder]  \
     --student_checkpoint model_<iteration_number>.pt \
     --robot h1
 ```
@@ -260,7 +265,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p scripts/rsl_rl/play.py \
     --num_envs 10 \
     --reference_motion_path neural_wbc/data/data/motions/g1_test.pkl \
     --student_player \
-    --student_path logs/student/<date_time> \
+    --student_path [log_folder] \
     --student_checkpoint model_<iteration_number>.pt \
     --robot g1
 ```
@@ -315,7 +320,7 @@ ${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/eval.py \
 For example,
 ```bash
 ${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/eval.py  --num_envs 10 \
---teacher_policy.resume_path  logs/teacher/<date_time>\
+--teacher_policy.resume_path  [log_folder] \
 --teacher_policy.checkpoint model_<iteration_number>.pt --robot g1
 ```
 
@@ -323,7 +328,7 @@ or
 ```bash
 ${ISAACLAB_PATH}/isaaclab.sh -p scripts/rsl_rl/eval.py  --num_envs 10 \
 --student_player \
---student_path logs/student/<date_time> \
+--student_path [log_folder] \
 --student_checkpoint model_<iteration_number>.pt --robot g1
 ```
 
@@ -373,7 +378,7 @@ To run the evaluation of Sim2Sim,
 ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --num_envs 1 \
     --headless \
-    --student_path logs/student/<date_time> \
+    --student_path [log_folder] \
     --student_checkpoint model_<iteration_number>.pt \
     --robot_model h1
 ```
@@ -382,7 +387,7 @@ or
 ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --num_envs 1 \
     --headless \
-    --student_path logs/student/<date_time> \
+    --student_path [log_folder] \
     --student_checkpoint model_<iteration_number>.pt \
     --robot_model g1
 ```
@@ -399,7 +404,7 @@ To deploy the trained policy on the [Unitree H1 robot](https://unitree.com/h1),
 
 ```bash
 ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/s2r_player.py \
-    --student_path logs/student/<date_time> \
+    --student_path [log_folder] \
     --student_checkpoint model_<iteration_number>.pt \
     --reference_motion_path neural_wbc/data/data/motions/<motion_name>.pkl \
     --robot unitree_h1 \

@@ -33,7 +33,7 @@ from isaaclab.sensors import ContactSensor, RayCaster
 from isaaclab.utils.noise import NoiseModel, NoiseModelCfg, UniformNoiseCfg
 
 from .body_state import build_body_state
-from .rewards import NeuralWBCRewards, NeuralWBCRewards_G1
+from .rewards import NeuralWBCRewards, NeuralWBCRewardCfg_H12, NeuralWBCRewards_G1
 from .visualization import RefMotionVisualizer
 
 if TYPE_CHECKING:
@@ -249,7 +249,16 @@ class NeuralWBCEnv(DirectRLEnv):
                 body_state_feet_ids=feet_body_ids,
                 root_ids=self.cfg.root_id,
             )
-        else:
+        elif self.num_actions == 21:
+            self._rewards = NeuralWBCRewardCfg_H12(
+                env=self,
+                reward_cfg=self.cfg.rewards,
+                contact_sensor=self.contact_sensor,
+                contact_sensor_feet_ids=self.feet_ids,
+                body_state_feet_ids=feet_body_ids,
+                root_ids=self.cfg.root_id,
+            )   
+        elif self.num_actions == 23:
             self._rewards = NeuralWBCRewards_G1(
                 env=self,
                 reward_cfg=self.cfg.rewards,
@@ -258,6 +267,8 @@ class NeuralWBCEnv(DirectRLEnv):
                 body_state_feet_ids=feet_body_ids,
                 root_ids=self.cfg.root_id,
             )
+        else:
+            raise ValueError
         self._termination_conditions = {}
 
         # Curriculum
@@ -337,6 +348,8 @@ class NeuralWBCEnv(DirectRLEnv):
         if self.cfg.mode.is_distill_mode():
             obs_dic = self._get_observations()
             self.history.update(obs_dic)
+
+        # actions = torch.clip(actions, -100., 100.).to(self.device)
 
         # Action delay process
         if self.cfg.ctrl_delay_step_range[1] > 0:

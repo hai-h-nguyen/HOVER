@@ -21,6 +21,28 @@ from inference_env.neural_wbc_env_cfg import NeuralWBCEnvCfg
 from neural_wbc.core.mask import calculate_mask_length
 from neural_wbc.data import get_data_path
 
+DISTILL_MASK_MODES_ALL = {
+    "exbody": {
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": ["root.*"],
+    },
+    "humanplus": {
+        "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": ["waist.*joint.*", ".*hip.*joint.*", ".*knee.*joint.*", ".*ankle.*joint.*", "root.*"],
+    },
+    "h2o": {
+        "upper_body": [
+            ".*shoulder_roll_link.*",
+            ".*elbow.*link.*",
+            ".*hand.*link.*",
+        ],
+        "lower_body": [".*ankle_roll_link.*"],
+    },
+    "omnih2o": {
+        "upper_body": [".*hand.*link.*", ".*head.*link.*"],
+    },
+}
+
 
 @dataclass
 class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
@@ -84,6 +106,9 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                     "right_shoulder_yaw_joint",
                     "right_elbow_joint",
                 ]
+
+    distill_mask_sparsity_randomization_enabled = False
+    distill_mask_modes = {"exbody": DISTILL_MASK_MODES_ALL["exbody"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]

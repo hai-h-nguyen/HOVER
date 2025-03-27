@@ -23,7 +23,7 @@ from typing import Literal
 from inference_env.neural_wbc_env_cfg import NeuralWBCEnvCfg
 from mujoco_wrapper.control import resolve_control_fn
 
-from neural_wbc.core import EnvironmentWrapper, ReferenceMotionManager
+from neural_wbc.core import EnvironmentWrapper, ReferenceMotionManager, mask
 from neural_wbc.core.body_state import BodyState
 from neural_wbc.core.observations import StudentHistory, compute_student_observations
 from neural_wbc.core.robot_wrapper import get_robot_class, get_robot_names
@@ -125,9 +125,6 @@ class NeuralWBCEnv(EnvironmentWrapper):
             self.extend_body_parent_ids = None
             self.extend_body_pos = None
 
-        # self._tracked_body_ids = [self._body_ids_extend[name] for name in self.cfg.tracked_body_names]
-        self._tracked_body_ids = [cfg.num_bodies, cfg.num_bodies+1, cfg.num_bodies+2]
-
         # Initialize extras
         self.extras = {}
 
@@ -206,10 +203,22 @@ class NeuralWBCEnv(EnvironmentWrapper):
 
         # The mask is ordered by bodies, joints, root references. Since bodies are first we can
         # directly reuse the self._tracked_body_ids here too.
+        self.mask_element_names = mask.create_mask_element_names(
+            body_names=[n for n in self._body_ids_extend.keys()],
+            joint_names=[n for n in self._joint_ids.keys()],
+        )
         self._mask = torch.zeros((self.num_envs, self.cfg.mask_length), device=self.device).bool()
-        self._mask[:, self._tracked_body_ids] = True
+        self._mask[:] = mask.create_mask(
+                                        mask_element_names=self.mask_element_names,
+                                        mask_modes=cfg.distill_mask_modes,
+                                        enable_sparsity_randomization=cfg.distill_mask_sparsity_randomization_enabled,
+                                        device=self.device,
+                                        num_envs=self.num_envs,
+                                        )
 
         self.reset()
+
+    
 
     @property
     def robot(self):
@@ -519,7 +528,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
             offset=self._start_positions_on_terrain,
             terrain_heights=self.robot.get_terrain_heights(),
         )
-        self._robot.visualize(ref_motion_state=ref_motion_state)
+        self._robot.visualize(mask=self._mask.detach().clone(), ref_motion_state=ref_motion_state)
 
         current_body_state = self._compose_body_state(
             extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids

@@ -26,7 +26,6 @@ from isaaclab.actuators import IdealPDActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.sensors import RayCasterCfg, patterns
 from isaaclab.utils import configclass
-# from isaaclab_assets import G1_ANNEAL_CFG
 
 from .events import NeuralWBCPlayEventCfg, NeuralWBCTrainEventCfg
 from .neural_wbc_env_cfg import NeuralWBCEnvCfg

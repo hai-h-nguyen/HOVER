@@ -745,3 +745,72 @@ class NeuralWBCRewards_G1(NeuralWBCRewards):
         """
         # Joints 15 - 22 are upper body joints in Isaac Gym.
         return torch.sum(torch.square(previous_actions[:, 15:] - actions[:, 15:]), dim=1)
+    
+class NeuralWBCRewards_H12(NeuralWBCRewards):
+    def __init__(self, env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids):
+        super().__init__(env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids)
+
+    def reward_track_body_position_extended(
+        self,
+        body_state: BodyState,
+        ref_motion_state: ReferenceMotionState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes a reward based on the difference between the body's extended position and the reference motion's
+        extended position.
+
+        This function is rewritten from _reward_teleop_body_position_extend of legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        body_pos_extend = body_state.body_pos_extend
+        ref_body_pos_extend = ref_motion_state.body_pos_extend
+
+        diff_global_body_pos = ref_body_pos_extend - body_pos_extend
+        diff_global_body_pos_lower = diff_global_body_pos[:, :13]
+        diff_global_body_pos_upper = diff_global_body_pos[:, 13:]
+        diff_body_pos_dist_lower = (diff_global_body_pos_lower**2).mean(dim=-1).mean(dim=-1)
+        diff_body_pos_dist_upper = (diff_global_body_pos_upper**2).mean(dim=-1).mean(dim=-1)
+        r_body_pos_lower = torch.exp(-diff_body_pos_dist_lower / self._cfg.body_pos_lower_body_sigma)
+        r_body_pos_upper = torch.exp(-diff_body_pos_dist_upper / self._cfg.body_pos_upper_body_sigma)
+
+        return (
+            r_body_pos_lower * self._cfg.body_pos_lower_body_weight
+            + r_body_pos_upper * self._cfg.body_pos_upper_body_weight
+        )
+    
+    def penalize_lower_body_action_changes(
+        self,
+        previous_actions: torch.Tensor,
+        actions: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty for action changes in the lower body.
+
+        This function is adapted from _reward_lower_action_rate in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        # Joints 0 - 14 are lower body joints in Isaac Gym.
+        return torch.sum(torch.square(previous_actions[:, :12] - actions[:, :12]), dim=1)
+
+    def penalize_upper_body_action_changes(
+        self,
+        previous_actions: torch.Tensor,
+        actions: torch.Tensor,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty for action changes in the upper body.
+
+        This function is adapted from _reward_upper_action_rate in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        # Joints 15 - 22 are upper body joints in Isaac Gym.
+        return torch.sum(torch.square(previous_actions[:, 12:] - actions[:, 12:]), dim=1)

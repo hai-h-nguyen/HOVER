@@ -118,17 +118,6 @@ def main():
     # set seed of the environment
     env.seed(teacher_policy_cfg.seed)
 
-    if env_cfg.use_wandb:
-        wandb.login()
-        run_id = wandb.util.generate_id()
-        run = wandb.init(name=f"{args_cli.robot}", 
-                         config=teacher_policy_cfg.to_dict(), 
-                         id=run_id, 
-                         dir=log_dir, 
-                         sync_tensorboard=True
-                         )
-        wandb.run.name = f'Teacher: {args_cli.robot}'
-
     # run training
     ppo_runner.learn(num_learning_iterations=teacher_policy_cfg.runner.max_iterations, init_at_random_ep_len=True)
 

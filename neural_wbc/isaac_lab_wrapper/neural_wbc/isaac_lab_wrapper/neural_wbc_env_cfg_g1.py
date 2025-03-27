@@ -26,7 +26,6 @@ from isaaclab.actuators import IdealPDActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.sensors import RayCasterCfg, patterns
 from isaaclab.utils import configclass
-# from isaaclab_assets import G1_ANNEAL_CFG
 
 from .events import NeuralWBCPlayEventCfg, NeuralWBCTrainEventCfg
 from .neural_wbc_env_cfg import NeuralWBCEnvCfg
@@ -139,8 +138,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.0001,
-            friction=0.0001,
+            armature=0.001,
+            friction=0.001,
         ),
         "feet": IdealPDActuatorCfg(
             joint_names_expr=[".*_ankle_roll_joint", ".*_ankle_pitch_joint"],
@@ -151,8 +150,8 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.0001,
-            friction=0.0001,
+            armature=0.001,
+            friction=0.001,
         ),
         "arms": IdealPDActuatorCfg(
             joint_names_expr=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", ".*_elbow_joint"],
@@ -170,8 +169,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.0001,
-            friction=0.0001,
+            armature=0.001,
+            friction=0.001,
         ),
     }
 )
