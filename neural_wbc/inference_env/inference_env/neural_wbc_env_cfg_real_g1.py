@@ -60,13 +60,13 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     robot_actuation_type: Literal["Pos", "Torque"] = "Pos"
 
     # hardware parameters
-    # network_interface = "eno1"
-    network_interface = "lo"
+    network_interface = "eno1"
+    # network_interface = "lo"
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
     subscriber_freq = 10
-    reset_duration = 0.0  # seconds
-    reset_step_dt = 0.01  # seconds
+    reset_duration = 10.0  # seconds
+    reset_step_dt = 0.02  # seconds
     robot_command_mode = "position"  # position or torque
     gravity_value = -9.8  # m/s^2
 

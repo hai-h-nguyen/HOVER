@@ -74,6 +74,7 @@ class UnitreeG1(Robot):
         self.joint_vel_offset = self._kinematic_model.joint_vel_offset
 
         self._g1_sdk = G1SDKWrapper(cfg=self.cfg)
+        self.counter = 0
 
     def _resolve_command_fn(
         self,
@@ -182,6 +183,9 @@ class UnitreeG1(Robot):
         self._kinematic_model.forward()
         self._kinematic_model.update_viewer()
         self.send_command(actions)
+        self.counter += 1
+        # if (self.counter % 5):
+        #     import ipdb; ipdb.set_trace()
 
     def get_body_ids(self, body_names: list[str] | None = None) -> dict[str, int]:
         """Get the IDs of all bodies in the model, indexed after removing the world body.

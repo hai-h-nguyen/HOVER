@@ -24,6 +24,8 @@ from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowCmd_, LowState_
 from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
 
+WAIST_PITCH_MOTOR_ID = 14 
+
 class MotorMode:
     PR = 0  # Series Control for Pitch/Roll Joints
     AB = 1  # Parallel Control for A/B Joints
@@ -118,6 +120,10 @@ class G1SDKWrapper:
             cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
             cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
             cmd.motor_cmd[i].tau = 0.        
+        cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].mode = 0
+        cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kp = 0.0
+        cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kd = 0.0
+
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -146,7 +152,13 @@ class G1SDKWrapper:
                 motor_idx = self.cfg.JointSeq2MotorID[joint_idx]
                 self._low_cmd.motor_cmd[motor_idx].q = cmd_joint_positions[joint_idx]
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
-                self._low_cmd.motor_cmd[motor_idx].tau = 0.0
+                self._low_cmd.motor_cmd[motor_idx].tau = 0.0            
+            self._low_cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].q = 0.0
+            for i in range(12):
+                motor_idx = self.cfg.JointSeq2MotorID[i]
+                self._low_cmd.motor_cmd[motor_idx].q = 0.0
+                self._low_cmd.motor_cmd[motor_idx].dq = 0.0
+                self._low_cmd.motor_cmd[motor_idx].tau = 0.0  
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
@@ -164,6 +176,7 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].tau = cmd_joint_torques[joint_idx]
                 self._low_cmd.motor_cmd[motor_idx].kp = 0.0
                 self._low_cmd.motor_cmd[motor_idx].kd = 0.0
+            self._low_cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].tau = 0.0
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
@@ -180,35 +193,38 @@ class G1SDKWrapper:
         self.control_dt_ = self.cfg.reset_step_dt
         self.duration_ = self.cfg.reset_duration
         
-        # desired_joint_positions = np.array([ 
-        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0, 
-        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
-        #                         0.0, 0., 0.,
-        #                         0, 0, 0, 0,
-        #                         0, 0, 0, 0])
-        # if desired_joint_positions is None:
-        #     desired_joint_positions = np.zeros(self.cfg.num_joints)
-        # print("Resetting G1 to given pose.")
-        # print("desired_joint_positions: ", desired_joint_positions)
-        # while self.time_ < self.duration_:
-        #     self.time_ += self.control_dt_
-        #     ratio = self.time_ / self.duration_
-        #     print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
-        #     current_joint_positions = self.joint_positions
-        #     target_joint_positions = (
-        #         current_joint_positions + (desired_joint_positions - current_joint_positions) * ratio
-        #     )
-        #     # self.publish_joint_position_cmd(desired_joint_positions)
-        #     print("current_joint_positions: ", current_joint_positions[0:15])
-        #     time.sleep(self.control_dt_)
-        # self.time_ = 0.0
+        # import ipdb; ipdb.set_trace()
+
+        desired_joint_positions = np.array([ 
+                                -0.2,  0.0,  0.0,  0.5, -0.1, 0.0, 
+                                -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
+                                0.0, 0., 0.,
+                                0.2, 0, 0, 0.6,
+                                0.2, 0, 0, 0.6])
+        
+        if desired_joint_positions is None:
+            desired_joint_positions = np.zeros(self.cfg.num_joints)
+            
+        print("Resetting G1 to given pose.")
+        print("desired_joint_positions: ", desired_joint_positions)
+        while self.time_ < self.duration_:
+            self.time_ += self.control_dt_
+            ratio = self.time_ / self.duration_
+            print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
+            current_joint_positions = self.joint_positions
+            target_joint_positions = (
+                current_joint_positions + (desired_joint_positions - current_joint_positions) * ratio
+            )
+            self.publish_joint_position_cmd(desired_joint_positions)
+            # print("current_joint_positions: ", current_joint_positions[0:15])
+            time.sleep(self.control_dt_)
+
+        self.time_ = 0.0
 
         desired_joint_positions = desired_qpos.flatten()
         desired_joint_positions[10] = -0.3
-        # desired_joint_positions = desired_joint_positions.flatten()
-        if desired_joint_positions is None:
-            desired_joint_positions = np.zeros(self.cfg.num_joints)
-        print("Resetting G1 to given pose.")
+
+        print("Resetting G1 to initial pose.")
         print("desired_joint_positions: ", desired_joint_positions)
 
         while self.time_ < self.duration_:
@@ -221,6 +237,16 @@ class G1SDKWrapper:
             )
             self.publish_joint_position_cmd(target_joint_positions)
             time.sleep(self.control_dt_)
+
+        self.time_ = 0.0
+
+        print("Resetting G1 to initial pose.")
+
+        while self.time_ < self.duration_:
+            self.time_ += self.control_dt_
+            print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
+            time.sleep(self.control_dt_)
+
         print("\nReset complete.")
 
 

@@ -195,7 +195,7 @@ class ReferenceMotionManager:
         """Query a reference motion frame from motion lib."""
 
         motion_times = episode_length_buf * self._dt + self._motion_start_times
-        # motion_times = motion_times * 0
+        motion_times = motion_times * 1
         motion_res = self._motion_lib.get_motion_state(self._motion_ids, motion_times, offset=offset)
         
         if terrain_heights is not None:
