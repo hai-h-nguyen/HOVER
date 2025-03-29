@@ -25,6 +25,7 @@ from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
 
 WAIST_PITCH_MOTOR_ID = 14 
+WAIST_ROLL_MOTOR_ID = 13
 
 class MotorMode:
     PR = 0  # Series Control for Pitch/Roll Joints
@@ -123,6 +124,12 @@ class G1SDKWrapper:
         cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].mode = 0
         cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kp = 0.0
         cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kd = 0.0
+        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
+
+        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].mode = 0
+        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kp = 0.0
+        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kd = 0.0
+        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
 
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
@@ -154,6 +161,7 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._low_cmd.motor_cmd[motor_idx].tau = 0.0            
             self._low_cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].q = 0.0
+            self._low_cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].q = 0.0
             for i in range(12):
                 motor_idx = self.cfg.JointSeq2MotorID[i]
                 self._low_cmd.motor_cmd[motor_idx].q = 0.0
@@ -177,6 +185,7 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].kp = 0.0
                 self._low_cmd.motor_cmd[motor_idx].kd = 0.0
             self._low_cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].tau = 0.0
+            self._low_cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
