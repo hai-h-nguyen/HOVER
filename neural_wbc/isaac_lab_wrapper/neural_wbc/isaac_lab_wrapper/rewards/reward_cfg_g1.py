@@ -36,10 +36,12 @@ class NeuralWBCRewardCfg_G1:
         "penalize_feet_orientation": -2.0,
         "penalize_feet_heading_alignment": -0.1,
         "penalize_slippage": -1.0,
+        "penalize_stumble": -1.0,
         "penalize_by_joint_pos_limits": -10.0,
         "penalize_by_joint_velocity_limits": -5.0,
         "penalize_by_torque_limits": -5,
         "penalize_early_termination": -200.0,
+        "penalize_waist_deviation": -1.5,
     }
 
     # Sigmas for exponential terms

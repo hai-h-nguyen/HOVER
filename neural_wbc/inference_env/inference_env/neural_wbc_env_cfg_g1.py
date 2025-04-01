@@ -149,9 +149,9 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_ankle_pitch_joint": 40.0,
         "right_ankle_roll_joint": 40.0,
         
-        "waist_yaw_joint": 300,
-        "waist_roll_joint": 300,
-        "waist_pitch_joint": 300,
+        "waist_yaw_joint": 300.,
+        "waist_roll_joint": 300.,
+        "waist_pitch_joint": 300.,
         
         "left_shoulder_pitch_joint": 100.0,
         "left_shoulder_roll_joint": 100.0,
@@ -162,22 +162,30 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_shoulder_roll_joint": 100.0,
         "right_shoulder_yaw_joint": 50.0,
         "right_elbow_joint": 50.0,
+
+        # fixed wrists
+        "left_wrist_roll_joint": 20.0,
+        "left_wrist_pitch_joint": 20.0,
+        "left_wrist_yaw_joint": 20.0,
+        "right_wrist_roll_joint": 20.0,
+        "right_wrist_pitch_joint": 20.0,
+        "right_wrist_yaw_joint": 20.0,
     }
 
     damping = {
-        "left_hip_pitch_joint": 2.0,
-        "left_hip_roll_joint": 2.0,
-        "left_hip_yaw_joint": 2.0,
+        "left_hip_pitch_joint": 2.,
+        "left_hip_roll_joint": 2.,
+        "left_hip_yaw_joint": 2.,
         "left_knee_joint": 4.0,
         "left_ankle_pitch_joint": 2.0,
         "left_ankle_roll_joint": 2.0,
 
-        "right_hip_pitch_joint": 2.0,
-        "right_hip_roll_joint": 2.0,
-        "right_hip_yaw_joint": 2.0,
+        "right_hip_pitch_joint": 2.,
+        "right_hip_roll_joint": 2.,
+        "right_hip_yaw_joint": 2.,
         "right_knee_joint": 4.0,
-        "right_ankle_pitch_joint": 2.0,
-        "right_ankle_roll_joint": 2.0,
+        "right_ankle_pitch_joint": 2.,
+        "right_ankle_roll_joint": 2.,
         
         "waist_yaw_joint": 3.0,
         "waist_roll_joint": 3.0,
@@ -192,7 +200,16 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_shoulder_roll_joint": 2.0,
         "right_shoulder_yaw_joint": 2.0,
         "right_elbow_joint": 2.0,
+
+        # fixed wrists
+        "left_wrist_roll_joint": 1.0,
+        "left_wrist_pitch_joint": 1.0,
+        "left_wrist_yaw_joint": 1.0,
+        "right_wrist_roll_joint": 1.0,
+        "right_wrist_pitch_joint": 1.0,
+        "right_wrist_yaw_joint": 1.0,
     }
+
 
     effort_limit = {
         "left_hip_pitch_joint": 88.0,

@@ -367,6 +367,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     }
 
 
+
     mass_randomized_body_names = [
         "pelvis",
         "left_hip_yaw_link",

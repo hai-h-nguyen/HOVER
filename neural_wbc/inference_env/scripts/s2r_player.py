@@ -25,6 +25,7 @@ from inference_env.deployment_player import DeploymentPlayer
 from inference_env.neural_wbc_env_cfg_real_h1 import NeuralWBCEnvCfgRealH1
 from inference_env.neural_wbc_env_cfg_real_g1 import NeuralWBCEnvCfgRealG1
 from inference_env.utils import get_player_args
+from pynput.keyboard import Controller
 
 from neural_wbc.data import get_data_path
 
@@ -54,6 +55,11 @@ def main():
 
     inference_time = env_cfg.decimation * env_cfg.dt
     print("Deploying policy on real robot.")
+
+    keyboard = Controller()
+    keyboard.press('9')
+    keyboard.release('9')
+
     start_time = time.time()
     elapsed_time = 0.0
     for i in range(args_cli.max_iterations):

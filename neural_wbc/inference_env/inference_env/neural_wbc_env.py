@@ -288,6 +288,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
             # Convert it to numpy and apply it to the simulator.
             processed_action_np = self._processed_action.detach().cpu().numpy()
             self.robot.step(processed_action_np)
+            # import ipdb; ipdb.set_trace()
 
         # Forward the current episode step buffer to keep track of current number of steps into the motion reference.
         self.episode_length_buf += 1
@@ -388,16 +389,18 @@ class NeuralWBCEnv(EnvironmentWrapper):
         )
 
         joint_pos = ref_motion_state.joint_pos[env_ids]
-        joint_vel = ref_motion_state.joint_vel[env_ids]
+        joint_vel = ref_motion_state.joint_vel[env_ids] * 0.0
 
         # Note: In IsaacLab implementation, the z direction is offset by a constant, which is not necessary for mujoco.
         root_pos = ref_motion_state.root_pos[env_ids]
         root_quat = ref_motion_state.root_rot[env_ids]
 
-        root_lin_vel = ref_motion_state.root_lin_vel[env_ids]
-        root_ang_vel = ref_motion_state.root_ang_vel[env_ids]
+        root_lin_vel = ref_motion_state.root_lin_vel[env_ids] * 0.0
+        root_ang_vel = ref_motion_state.root_ang_vel[env_ids] * 0.0
 
         # Assemble the state of generalized coordinates.
+        joint_pos[:, 10] = -0.3
+        root_pos[:2] -= 0.04
         qpos = torch.hstack((root_pos, root_quat, joint_pos))
         qvel = torch.hstack((root_ang_vel, root_lin_vel, joint_vel))
 
@@ -441,6 +444,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
     def _apply_action(self):
         """Applies the current action to the robot."""
         actions_scaled = self.actions * self.cfg.action_scale + self.default_joint_pos
+        # print("self.default_joint_pos = ", self.default_joint_pos)
         self._processed_action = self._control_fn(self, actions_scaled)
         self._processed_action = self._apply_limits(self._processed_action)
         # Adding noise to the control signal to enhance robustness
