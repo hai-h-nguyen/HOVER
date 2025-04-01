@@ -443,14 +443,14 @@ class WBCMujoco:
                 else:
                     print("Position or velocity control")
 
-    def visualize_ref_state(self, ref_motion_state: ReferenceMotionState):
+    def visualize_ref_state(self, mask, ref_motion_state: ReferenceMotionState):
         """Visualize the reference motion state in Mujoco viewer, if enabled
 
         Args:
             ref_motion_state (ReferenceMotionState): Reference motion state
         """
         if self._viewer:
-            self._viewer.draw_reference_state(ref_motion_state)
+            self._viewer.draw_reference_state(mask, ref_motion_state)
 
     def _check_actuator_consistency(self):
         """Check whether all the actuators share the same control mode."""

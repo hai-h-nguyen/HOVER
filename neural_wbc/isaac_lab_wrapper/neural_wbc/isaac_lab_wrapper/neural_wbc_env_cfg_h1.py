@@ -33,7 +33,7 @@ from .terrain import HARD_ROUGH_TERRAINS_CFG, flat_terrain
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -42,7 +42,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder.*link.*",
+            ".*shoulder_roll_link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],
@@ -305,7 +305,7 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
         super().__post_init__()
 
         self.reference_motion_manager.robot_name = "h1"
-        self.reference_motion_manager.motion_path = get_data_path("motions/stable_punch.pkl")
+        self.reference_motion_manager.motion_path = get_data_path("motions/h1_test.pkl")
         self.reference_motion_manager.skeleton_path = get_data_path("motion_lib/h1.xml")
 
         if self.terrain.terrain_generator == HARD_ROUGH_TERRAINS_CFG:

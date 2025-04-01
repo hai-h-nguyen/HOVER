@@ -26,7 +26,6 @@ from isaaclab.actuators import IdealPDActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.sensors import RayCasterCfg, patterns
 from isaaclab.utils import configclass
-# from isaaclab_assets import G1_ANNEAL_CFG
 
 from .events import NeuralWBCPlayEventCfg, NeuralWBCTrainEventCfg
 from .neural_wbc_env_cfg import NeuralWBCEnvCfg
@@ -35,7 +34,7 @@ from .rewards import NeuralWBCRewardCfg_G1
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -44,7 +43,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder.*link.*",
+            ".*shoulder_roll_link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],
@@ -67,7 +66,7 @@ ENFORCED_TOGETHERNESS = {
 
 G1_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"neural_wbc/data/data/robots/g1/g1_29dof_anneal_23dof.usd",
+        usd_path=get_data_path("motion_lib/g1_29dof_anneal_23dof.usd"),
         activate_contact_sensors=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -139,9 +138,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-
-            armature=0.001,
-            # friction=0.03,
+            armature=0.0001,
+            friction=0.0001,
         ),
         "feet": IdealPDActuatorCfg(
             joint_names_expr=[".*_ankle_roll_joint", ".*_ankle_pitch_joint"],
@@ -152,9 +150,8 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.001,
-            # friction=0.03,
-
+            armature=0.0001,
+            friction=0.0001,
         ),
         "arms": IdealPDActuatorCfg(
             joint_names_expr=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", ".*_elbow_joint"],
@@ -172,10 +169,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-
-            armature=0.001,
-            # friction=0.03,
-
+            armature=0.0001,
+            friction=0.0001,
         ),
     }
 )
@@ -266,7 +261,6 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     lower_body_joint_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # hips, knees, ankles, torso
     upper_body_joint_ids = [15, 16, 17, 18, 19, 20, 21, 22]  # shoulders, elbows
 
-    # base_name = "torso_link"
     base_name = "pelvis"
     root_id = body_names.index(base_name)
 
@@ -323,16 +317,16 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_knee_joint": 150.0,
         "right_ankle_pitch_joint": 40.0,
         "right_ankle_roll_joint": 40.0,
-        
-        "waist_yaw_joint": 300.,
-        "waist_roll_joint": 300.,
-        "waist_pitch_joint": 300.,
-        
+
+        "waist_yaw_joint": 300,
+        "waist_roll_joint": 300,
+        "waist_pitch_joint": 300,
+
         "left_shoulder_pitch_joint": 100.0,
         "left_shoulder_roll_joint": 100.0,
         "left_shoulder_yaw_joint": 50.0,
         "left_elbow_joint": 50.0,
-        
+
         "right_shoulder_pitch_joint": 100.0,
         "right_shoulder_roll_joint": 100.0,
         "right_shoulder_yaw_joint": 50.0,
@@ -340,30 +334,33 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     }
 
     damping = {
-        "left_hip_pitch_joint": 2.,
-        "left_hip_roll_joint": 2.,
-        "left_hip_yaw_joint": 2.,
+        "left_hip_pitch_joint": 2.0,
+        "left_hip_roll_joint": 2.0,
+        "left_hip_yaw_joint": 2.0,
         "left_knee_joint": 4.0,
         "left_ankle_pitch_joint": 2.0,
         "left_ankle_roll_joint": 2.0,
 
-        "right_hip_pitch_joint": 2.,
-        "right_hip_roll_joint": 2.,
-        "right_hip_yaw_joint": 2.,
+        "right_hip_pitch_joint": 2.0,
+        "right_hip_roll_joint": 2.0,
+        "right_hip_yaw_joint": 2.0,
         "right_knee_joint": 4.0,
-        "right_ankle_pitch_joint": 2.,
-        "right_ankle_roll_joint": 2.,
-        
+        "right_ankle_pitch_joint": 2.0,
+        "right_ankle_roll_joint": 2.0,
+
         "waist_yaw_joint": 3.0,
         "waist_roll_joint": 3.0,
         "waist_pitch_joint": 3.0,
-        
+
         "left_shoulder_pitch_joint": 2.0,
         "left_shoulder_roll_joint": 2.0,
         "left_shoulder_yaw_joint": 2.0,
         "left_elbow_joint": 2.0,
-        
+
         "right_shoulder_pitch_joint": 2.0,
+        "right_shoulder_roll_joint": 2.0,
+        "right_shoulder_yaw_joint": 2.0,
+        "right_elbow_joint": 2.0,
         "right_shoulder_roll_joint": 2.0,
         "right_shoulder_yaw_joint": 2.0,
         "right_elbow_joint": 2.0,
@@ -416,7 +413,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         super().__post_init__()
 
         self.reference_motion_manager.robot_name = "g1"
-        self.reference_motion_manager.motion_path = get_data_path("motions/stable_punch.pkl")
+        self.reference_motion_manager.motion_path = get_data_path("motions/g1_test.pkl")
         self.reference_motion_manager.skeleton_path = get_data_path("motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml")
 
         if self.terrain.terrain_generator == HARD_ROUGH_TERRAINS_CFG:

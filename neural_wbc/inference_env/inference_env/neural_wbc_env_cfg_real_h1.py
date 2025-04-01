@@ -315,6 +315,5 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
     upper_body_joint_ids = [10, 11, 12, 13, 14, 15, 16, 17, 18]  # torso, shoulders, elbows
 
     def __post_init__(self):
-        self.reference_motion_cfg.robot_name = "h1"
-        self.reference_motion_cfg.motion_path = get_data_path("motions/stable_punch.pkl")
+        self.reference_motion_cfg.motion_path = get_data_path("motions/h1_test.pkl")
         self.reference_motion_cfg.skeleton_path = get_data_path("motion_lib/h1.xml")

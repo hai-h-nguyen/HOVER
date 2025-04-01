@@ -22,6 +22,7 @@ import yaml
 
 from inference_env.deployment_player import DeploymentPlayer
 from inference_env.neural_wbc_env_cfg_h1 import NeuralWBCEnvCfgH1
+from inference_env.neural_wbc_env_cfg_h12 import NeuralWBCEnvCfgH12
 from inference_env.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 from inference_env.utils import get_player_args
 
@@ -29,7 +30,7 @@ from neural_wbc.data import get_data_path
 
 # add argparse arguments
 parser = get_player_args(description="Evaluates motion tracking policy and collects metrics in MuJoCo.")
-parser.add_argument("--robot_model", type=str, choices=["h1", "g1", "gr1"], default="h1", help="Robot used in environment")
+parser.add_argument("--robot_model", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment")
 args_cli = parser.parse_args()
 
 CTRL_FREQ = 200.0
@@ -66,12 +67,8 @@ def main():
             "left_ankle": 1.0,
         }
 
-        player = DeploymentPlayer(
-            args_cli=args_cli,
-            env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
-            custom_config=custom_config,
-            demo_mode=True,
-        )
+        env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"))
+       
     elif args_cli.robot_model == "g1":
         joint_pos_cmd = {
                     "left_hip_pitch_joint": -0.1,
@@ -97,20 +94,26 @@ def main():
                     "right_shoulder_roll_joint": 0.,
                     "right_shoulder_yaw_joint": 0.,
                     "right_elbow_joint": 0.,
-    }
+        }
+        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"))
+    
+    elif args_cli.robot_model == "h12":
+        joint_pos_cmd = {
+            "right_elbow_joint": 2.0,
+            "left_elbow_joint": -2.0,
+            "torso_joint": 2.0,
+            "right_knee_joint": 2.0,
+            "left_knee_joint": 2.0,
+            "right_ankle_pitch_joint": 1.0,
+            "left_ankle_pitch_joint": 1.0,
+        }
+
+        env_cfg=NeuralWBCEnvCfgH12(model_xml_path=get_data_path("mujoco/models/h12/scene.xml"))
+    
     # joint_pos_cmd = None
-    if args_cli.robot == "g1":
-        player = DeploymentPlayer(
+    player = DeploymentPlayer(
             args_cli=args_cli,
-            env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml")),
-            custom_config=custom_config,
-            demo_mode=True,
-        )
-        
-    if args_cli.robot == "h1":
-        player = DeploymentPlayer(
-            args_cli=args_cli,
-            env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
+            env_cfg=env_cfg,
             custom_config=custom_config,
             demo_mode=True,
         )

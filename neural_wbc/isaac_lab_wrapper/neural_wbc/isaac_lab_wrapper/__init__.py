@@ -17,6 +17,7 @@
 import gymnasium as gym
 
 from . import neural_wbc_env_cfg_h1
+from . import neural_wbc_env_cfg_h12
 from . import neural_wbc_env_cfg_g1
 
 ##
@@ -38,5 +39,14 @@ gym.register(
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": neural_wbc_env_cfg_g1.NeuralWBCEnvCfgG1,
+    },
+)
+
+gym.register(
+    id="NeuralWBC-H12-v0",
+    entry_point="neural_wbc.isaac_lab_wrapper.neural_wbc_env:NeuralWBCEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": neural_wbc_env_cfg_h12.NeuralWBCEnvCfgH12,
     },
 )

@@ -19,6 +19,7 @@ import yaml
 
 from inference_env.deployment_player import DeploymentPlayer
 from inference_env.neural_wbc_env_cfg_h1 import NeuralWBCEnvCfgH1
+from inference_env.neural_wbc_env_cfg_h12 import NeuralWBCEnvCfgH12
 from inference_env.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 from inference_env.utils import get_player_args
 
@@ -28,7 +29,7 @@ from neural_wbc.data import get_data_path
 # add argparse arguments
 parser = get_player_args(description="Evaluates motion tracking policy and collects metrics in MuJoCo.")
 parser.add_argument("--metrics_path", type=str, default=None, help="Path to store metrics in.")
-parser.add_argument("--robot_model", type=str, choices=["h1", "g1", "gr1"], default="h1", help="Robot used in environment")
+parser.add_argument("--robot_model", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment")
 args_cli = parser.parse_args()
 
 
@@ -42,19 +43,19 @@ def main():
 
     # Initialize the player with the updated properties
     if args_cli.robot_model == "h1":
-        player = DeploymentPlayer(
-        args_cli=args_cli,
-        env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml")),
-        custom_config=custom_config,
-        )
+        env_cfg=NeuralWBCEnvCfgH1(model_xml_path=get_data_path("mujoco/models/h1/scene.xml"))
+    elif args_cli.robot_model == "h12":
+        env_cfg=NeuralWBCEnvCfgH12(model_xml_path=get_data_path("mujoco/models/h12/scene.xml"))
     elif args_cli.robot_model == "g1":
-        player = DeploymentPlayer(
-        args_cli=args_cli,
-        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml")),
-        custom_config=custom_config,
-        )
+        env_cfg=NeuralWBCEnvCfgG1(model_xml_path=get_data_path("mujoco/models/g1/scene.xml"))
     else:
         raise ValueError
+    
+    player = DeploymentPlayer(
+        args_cli=args_cli,
+        custom_config=custom_config,
+        env_cfg=env_cfg,
+        )
     evaluator = Evaluator(env_wrapper=player.env, metrics_path=args_cli.metrics_path)
 
     should_stop = False

@@ -36,6 +36,59 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
 
     robot = "unitree_g1"
 
+    body_names = [
+                  'pelvis',
+                  'left_hip_pitch_link',
+                  'left_hip_roll_link',
+                  'left_hip_yaw_link',
+                  'left_knee_link',
+                  'left_ankle_pitch_link',
+                  'left_ankle_roll_link',
+                  'right_hip_pitch_link',
+                  'right_hip_roll_link',
+                  'right_hip_yaw_link',
+                  'right_knee_link',
+                  'right_ankle_pitch_link',
+                  'right_ankle_roll_link',
+                  'waist_yaw_link',
+                  'waist_roll_link',
+                  'torso_link',
+                  'left_shoulder_pitch_link',
+                  'left_shoulder_roll_link',
+                  'left_shoulder_yaw_link',
+                  'left_elbow_link',
+                  'right_shoulder_pitch_link',
+                  'right_shoulder_roll_link',
+                  'right_shoulder_yaw_link',
+                  'right_elbow_link',
+                ]
+    
+    joint_names = [
+                    "left_hip_pitch_joint",
+                    "left_hip_roll_joint",
+                    "left_hip_yaw_joint",
+                    "left_knee_joint",
+                    "left_ankle_pitch_joint",
+                    "left_ankle_roll_joint",
+                    "right_hip_pitch_joint",
+                    "right_hip_roll_joint",
+                    "right_hip_yaw_joint",
+                    "right_knee_joint",
+                    "right_ankle_pitch_joint",
+                    "right_ankle_roll_joint",
+                    "waist_yaw_joint",
+                    "waist_roll_joint",
+                    "waist_pitch_joint",
+                    "left_shoulder_pitch_joint",
+                    "left_shoulder_roll_joint",
+                    "left_shoulder_yaw_joint",
+                    "left_elbow_joint",
+                    "right_shoulder_pitch_joint",
+                    "right_shoulder_roll_joint",
+                    "right_shoulder_yaw_joint",
+                    "right_elbow_joint",
+                ]
+
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
     extend_body_pos = torch.tensor([[0.25, 0, 0], [0.25, 0, 0], [0, 0, 0.42]])
@@ -404,5 +457,5 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
 
     def __post_init__(self):
         self.reference_motion_cfg.robot_name = "g1"
-        self.reference_motion_cfg.motion_path = get_data_path("motions/stable_punch.pkl")
+        self.reference_motion_cfg.motion_path = get_data_path("motions/g1_test.pkl")
         self.reference_motion_cfg.skeleton_path = get_data_path("motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml")

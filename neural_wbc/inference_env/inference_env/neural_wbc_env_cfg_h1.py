@@ -23,6 +23,29 @@ from neural_wbc.core.mask import calculate_mask_length
 from neural_wbc.data import get_data_path
 
 
+DISTILL_MASK_MODES_ALL = {
+    "exbody": {
+        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": ["root.*"],
+    },
+    "humanplus": {
+        "upper_body": [".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": [".*hip.*joint.*", ".*knee.*joint.*", ".*ankle.*joint.*", "root.*"],
+    },
+    "h2o": {
+        "upper_body": [
+            ".*shoulder_roll_link.*",
+            ".*elbow.*link.*",
+            ".*hand.*link.*",
+        ],
+        "lower_body": [".*ankle.*link.*"],
+    },
+    "omnih2o": {
+        "upper_body": [".*hand.*link.*", ".*head.*link.*"],
+    },
+}
+
+
 @dataclass
 class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     decimation = 4
@@ -35,6 +58,9 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     
     body_names = None
     joint_names = None
+    
+    distill_mask_sparsity_randomization_enabled = False
+    distill_mask_modes = {"h2o": DISTILL_MASK_MODES_ALL["h2o"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "pelvis"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
@@ -181,5 +207,5 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
 
     def __post_init__(self):
         self.reference_motion_cfg.robot_name = "h1"
-        self.reference_motion_cfg.motion_path = get_data_path("motions/stable_punch.pkl")
+        self.reference_motion_cfg.motion_path = get_data_path("motions/h1_test.pkl")
         self.reference_motion_cfg.skeleton_path = get_data_path("motion_lib/h1.xml")

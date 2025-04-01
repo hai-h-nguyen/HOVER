@@ -42,7 +42,7 @@ class UnitreeH1(Robot):
         self._h1_sdk = H1SDKWrapper(cfg=cfg)
         self.device = device
         self.send_command = self._resolve_command_fn(robot_actuation_type=cfg.robot_actuation_type)
-        # import ipdb; ipdb.set_trace()
+
         self._kinematic_model = WBCMujoco(
             model_path=cfg.model_xml_path,
             sim_dt=cfg.dt,
