@@ -108,7 +108,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                 ]
 
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"exbody": DISTILL_MASK_MODES_ALL["exbody"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
@@ -255,7 +255,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     }
 
     robot_init_state = {
-        "base_pos": [0.0, 0.0, 0.78],
+        "base_pos": [0.0, 0.0, 0.8],
         "base_quat": [1.0, 0.0, 0.0, 0.0],
         "joint_pos": {
                     "left_hip_pitch_joint": -0.1,

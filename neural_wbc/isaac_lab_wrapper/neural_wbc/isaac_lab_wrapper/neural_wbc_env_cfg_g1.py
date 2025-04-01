@@ -138,8 +138,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.001,
-            friction=0.001,
+            armature=0.0001,
+            friction=0.0001,
         ),
         "feet": IdealPDActuatorCfg(
             joint_names_expr=[".*_ankle_roll_joint", ".*_ankle_pitch_joint"],
@@ -150,8 +150,8 @@ G1_CFG = ArticulationCfg(
             velocity_limit=37.0,
             stiffness=0,
             damping=0,
-            armature=0.001,
-            friction=0.001,
+            armature=0.0001,
+            friction=0.0001,
         ),
         "arms": IdealPDActuatorCfg(
             joint_names_expr=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", ".*_elbow_joint"],
@@ -169,8 +169,8 @@ G1_CFG = ArticulationCfg(
             },
             stiffness=0,
             damping=0,
-            armature=0.001,
-            friction=0.001,
+            armature=0.0001,
+            friction=0.0001,
         ),
     }
 )
