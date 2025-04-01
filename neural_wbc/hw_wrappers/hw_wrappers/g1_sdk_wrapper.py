@@ -121,15 +121,15 @@ class G1SDKWrapper:
             cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
             cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
             cmd.motor_cmd[i].tau = 0.        
-        cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].mode = 0
-        cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kp = 0.0
-        cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kd = 0.0
-        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
+        # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].mode = 0
+        # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kp = 0.0
+        # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kd = 0.0
+        # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
 
-        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].mode = 0
-        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kp = 0.0
-        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kd = 0.0
-        cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
+        # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].mode = 0
+        # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kp = 0.0
+        # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kd = 0.0
+        # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.0
 
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
@@ -160,15 +160,15 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].q = cmd_joint_positions[joint_idx]
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._low_cmd.motor_cmd[motor_idx].tau = 0.0            
-            self._low_cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].q = 0.0
-            self._low_cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].q = 0.0
-            for i in range(12):
-                motor_idx = self.cfg.JointSeq2MotorID[i]
-                self._low_cmd.motor_cmd[motor_idx].q = 0.0
-                self._low_cmd.motor_cmd[motor_idx].dq = 0.0
-                self._low_cmd.motor_cmd[motor_idx].tau = 0.0  
+            # for i in range(12):
+            #     motor_idx = self.cfg.JointSeq2MotorID[i]
+            #     self._low_cmd.motor_cmd[motor_idx].q = 0.0
+            #     self._low_cmd.motor_cmd[motor_idx].dq = 0.0
+            #     self._low_cmd.motor_cmd[motor_idx].tau = 0.0  
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
+        
+
 
     def publish_joint_torque_cmd(self, cmd_joint_torques: np.ndarray):
         """Publishes joint torque commands to the low-level command publisher.
@@ -208,8 +208,8 @@ class G1SDKWrapper:
                                 -0.2,  0.0,  0.0,  0.5, -0.1, 0.0, 
                                 -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
                                 0.0, 0., 0.,
-                                0.2, 0, 0, 0.6,
-                                0.2, 0, 0, 0.6])
+                                0.2, 0., 0, 0.6,
+                                0.2, -0.2, 0, 0.6])
         
         if desired_joint_positions is None:
             desired_joint_positions = np.zeros(self.cfg.num_joints)
@@ -224,14 +224,16 @@ class G1SDKWrapper:
             target_joint_positions = (
                 current_joint_positions + (desired_joint_positions - current_joint_positions) * ratio
             )
-            self.publish_joint_position_cmd(desired_joint_positions)
+            self.publish_joint_position_cmd(target_joint_positions )
             # print("current_joint_positions: ", current_joint_positions[0:15])
             time.sleep(self.control_dt_)
 
         self.time_ = 0.0
 
         desired_joint_positions = desired_qpos.flatten()
-        desired_joint_positions[10] = -0.3
+        # desired_joint_positions[0:12] = np.array([-0.7878,  0.3228,  0.3979,  0.8753, -0.3570, -0.2657, -0.7720, -0.2410,
+        #  -0.1448,  0.8237, -0.3983,  0.2650])
+        # desired_joint_positions[10] = -0.3
 
         print("Resetting G1 to initial pose.")
         print("desired_joint_positions: ", desired_joint_positions)

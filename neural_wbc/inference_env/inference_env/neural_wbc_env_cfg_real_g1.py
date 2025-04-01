@@ -60,12 +60,12 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     robot_actuation_type: Literal["Pos", "Torque"] = "Pos"
 
     # hardware parameters
-    network_interface = "eno1"
-    # network_interface = "lo"
+    # network_interface = "eno1"
+    network_interface = "lo"
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
     subscriber_freq = 10
-    reset_duration = 10.0  # seconds
+    reset_duration = 5.0  # seconds
     reset_step_dt = 0.02  # seconds
     robot_command_mode = "position"  # position or torque
     gravity_value = -9.8  # m/s^2
@@ -226,6 +226,44 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
         "right_wrist_pitch_joint": 20.0,
         "right_wrist_yaw_joint": 20.0,
     }
+
+    # damping = {
+    #     "left_hip_pitch_joint": 2.,
+    #     "left_hip_roll_joint": 2.,
+    #     "left_hip_yaw_joint": 2.,
+    #     "left_knee_joint": 4.0,
+    #     "left_ankle_pitch_joint": 2.0,
+    #     "left_ankle_roll_joint": 2.0,
+
+    #     "right_hip_pitch_joint": 2.,
+    #     "right_hip_roll_joint": 2.,
+    #     "right_hip_yaw_joint": 2.,
+    #     "right_knee_joint": 4.0,
+    #     "right_ankle_pitch_joint": 2.,
+    #     "right_ankle_roll_joint": 2.,
+        
+    #     "waist_yaw_joint": 3.0,
+    #     "waist_roll_joint": 3.0,
+    #     "waist_pitch_joint": 3.0,
+        
+    #     "left_shoulder_pitch_joint": 2.0,
+    #     "left_shoulder_roll_joint": 2.0,
+    #     "left_shoulder_yaw_joint": 2.0,
+    #     "left_elbow_joint": 2.0,
+        
+    #     "right_shoulder_pitch_joint": 2.0,
+    #     "right_shoulder_roll_joint": 2.0,
+    #     "right_shoulder_yaw_joint": 2.0,
+    #     "right_elbow_joint": 2.0,
+
+    #     # fixed wrists
+    #     "left_wrist_roll_joint": 1.0,
+    #     "left_wrist_pitch_joint": 1.0,
+    #     "left_wrist_yaw_joint": 1.0,
+    #     "right_wrist_roll_joint": 1.0,
+    #     "right_wrist_pitch_joint": 1.0,
+    #     "right_wrist_yaw_joint": 1.0,
+    # }
 
     damping = {
         "left_hip_pitch_joint": 2.,

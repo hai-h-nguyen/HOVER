@@ -69,6 +69,7 @@ ${ISAACLAB_PATH:?}/isaaclab.sh -p neural_wbc/inference_env/scripts/eval.py \
     --num_envs 1 \
     --student_path <path> \
     --student_checkpoint model_<iteration_number>.pt \
+    --reference_motion_path <path> \
     --robot_model g1
 ```
 
