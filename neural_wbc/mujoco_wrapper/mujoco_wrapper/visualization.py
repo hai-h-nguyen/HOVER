@@ -23,9 +23,8 @@ from neural_wbc.core.reference_motion import ReferenceMotionState
 
 from scipy.spatial.transform import Rotation
 
-def quaternion_to_rotation_matrix(wxyz):
-    w, x, y, z = wxyz
-    x, z = z, y
+def quaternion_to_rotation_matrix(xyzw):
+    x, y, z, w = xyzw
     
     # Calculate the squares of each component
     w2 = w * w

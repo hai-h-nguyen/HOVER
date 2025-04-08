@@ -25,7 +25,8 @@ from tqdm import tqdm
 from phc.smpllib.smpl_eval import compute_metrics_lite
 
 from neural_wbc.core import EnvironmentWrapper, math_utils
-
+import math
+from matplotlib import pyplot as plt
 
 @dataclass
 class Frame:
@@ -593,17 +594,81 @@ class Evaluator:
         body_mask = body_mask.unsqueeze(-1)
         body_mask_expanded = body_mask.expand(num_envs, num_bodies, 3)
 
-        upper_body_joint_ids = info["data"]["upper_joint_ids"]
-        lower_body_joint_ids = info["data"]["lower_joint_ids"]
+        self.upper_body_joint_ids = info["data"]["upper_joint_ids"]
+        self.lower_body_joint_ids = info["data"]["lower_joint_ids"]
 
-        frame = self._build_frame(state_data, body_mask_expanded, num_envs, upper_body_joint_ids, lower_body_joint_ids)
-        frame_gt = self._build_frame(
-            ground_truth_data, body_mask_expanded, num_envs, upper_body_joint_ids, lower_body_joint_ids
-        )
+        frame = self._build_frame(state_data, 
+                                  body_mask_expanded, 
+                                  num_envs, 
+                                  self.upper_body_joint_ids, 
+                                  self.lower_body_joint_ids)
+        frame_gt = self._build_frame(ground_truth_data, 
+                                     body_mask_expanded, 
+                                     num_envs, 
+                                     self.upper_body_joint_ids, 
+                                     self.lower_body_joint_ids)
 
         self._update_failure_metrics(newly_terminated, info)
         self._episode.add_frame(frame)
         self._episode_gt.add_frame(frame_gt)
+    
+    def visualize(self, dt):
+        upper_joint_pos_gt = self._episode_gt.upper_body_joint_pos[0].detach().cpu().numpy()
+        lower_joint_pos_gt = self._episode_gt.lower_body_joint_pos[0].detach().cpu().numpy()
+        root_lin_vel_gt = self._episode_gt.root_lin_vel[0].detach().cpu().numpy()
+
+        upper_joint_pos = self._episode.upper_body_joint_pos[0].detach().cpu().numpy()
+        lower_joint_pos = self._episode.lower_body_joint_pos[0].detach().cpu().numpy()
+        root_lin_vel = self._episode.root_lin_vel[0].detach().cpu().numpy()
+        
+        num_joints = len(self.upper_body_joint_ids) + len(self.lower_body_joint_ids)
+        _num_frames = upper_joint_pos.shape[0]
+        
+        nb_rows = nb_cols = math.ceil(math.sqrt(num_joints + 3))
+        fig, axs = plt.subplots(nb_rows, nb_cols)
+        time = np.linspace(0, _num_frames * dt, _num_frames)
+        
+        for i in range(num_joints):
+            row = (i) // nb_rows
+            col = (i) % nb_cols
+            a = axs[row, col]
+            if i in self.upper_body_joint_ids:
+                index = self.upper_body_joint_ids.index(i)
+                a.plot(time, upper_joint_pos[:, index], label="measured")
+                a.plot(time, upper_joint_pos_gt[:, index], label="target")
+            elif i in self.lower_body_joint_ids:
+                index = self.lower_body_joint_ids.index(i)
+                a.plot(time, lower_joint_pos[:, index], label="measured")
+                a.plot(time, lower_joint_pos_gt[:, index], label="target")
+            a.set(xlabel='time [s]', ylabel='Position [rad]', title=f'DOF Position {i}')
+            a.legend()
+        
+        row = (num_joints) // nb_rows
+        col = (num_joints) % nb_cols
+        a = axs[row, col]
+        a.plot(time, root_lin_vel[:, 0], label='measured')
+        a.plot(time, root_lin_vel_gt[:, 0], label='target')
+        a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity x')
+        a.legend()
+
+        row = (num_joints + 1) // nb_rows
+        col = (num_joints + 1) % nb_cols
+        a = axs[row, col]
+        a.plot(time, root_lin_vel[:, 1], label='measured')
+        a.plot(time, root_lin_vel_gt[:, 1], label='target')
+        a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity y')
+        a.legend()
+
+        row = (num_joints + 2) // nb_rows
+        col = (num_joints + 2) % nb_cols
+        a = axs[row, col]
+        a.plot(time, root_lin_vel[:, 2], label='measured')
+        a.plot(time, root_lin_vel_gt[:, 2], label='target')
+        a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity z')
+        a.legend()
+
+        plt.subplots_adjust(wspace=0.5, hspace=1.0)
+        plt.show()
 
     def _build_frame(
         self, data: dict, mask: torch.Tensor, num_envs: int, upper_joint_ids: list, lower_joint_ids: list

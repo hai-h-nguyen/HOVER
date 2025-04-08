@@ -144,7 +144,7 @@ class UnitreeH1(Robot):
 
         """
         if "ref_motion_state" in payload:
-            self._kinematic_model.visualize_ref_state(payload["ref_motion_state"])
+            self._kinematic_model.visualize_ref_state(payload["mask"], payload["ref_motion_state"])
 
     def step(self, actions: np.ndarray | None = None, nsteps: int = 1) -> None:
         """Step the simulation forward nsteps with the given action.

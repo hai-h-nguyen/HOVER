@@ -39,21 +39,10 @@ class UnitreeG1(Robot):
         super().__init__(cfg, num_instances=num_instances, device=device)
         self.cfg = cfg
 
-        self._effort_limits = np.zeros(self.cfg.num_joints)
-        for i in range(self.cfg.num_joints):
-            key = self.cfg.joint_names[i]
-            self._effort_limits[i] = self.cfg.effort_limit[key]
-
-        self._lower_position_limit = np.zeros(self.cfg.num_joints)
-        self._upper_position_limit = np.zeros(self.cfg.num_joints)
-        for i in range(self.cfg.num_joints):
-            key = self.cfg.joint_names[i]
-            self._lower_position_limit[i] = self.cfg.position_limit[key][0]
-            self._upper_position_limit[i] = self.cfg.position_limit[key][1]
-
+        self._g1_sdk = G1SDKWrapper(cfg=self.cfg)
         self.device = device
         self.send_command = self._resolve_command_fn(robot_actuation_type=cfg.robot_actuation_type)
-        # import ipdb; ipdb.set_trace()
+
         self._kinematic_model = WBCMujoco(
             model_path=cfg.model_xml_path,
             sim_dt=cfg.dt,
@@ -73,9 +62,6 @@ class UnitreeG1(Robot):
         self.joint_pos_offset = self._kinematic_model.joint_pos_offset
         self.joint_vel_offset = self._kinematic_model.joint_vel_offset
 
-        self._g1_sdk = G1SDKWrapper(cfg=self.cfg)
-        self.counter = 0
-
     def _resolve_command_fn(
         self,
         robot_actuation_type: Literal["Pos", "Torque"] = "Pos",
@@ -86,16 +72,6 @@ class UnitreeG1(Robot):
             return self._send_torque_command
         else:
             raise ValueError(f"Unrecognized robot actuation type {robot_actuation_type}")
-
-    def _apply_position_limits(self, actions):
-        """Applies position limits to the actions."""
-        actions = np.clip(actions, self._lower_position_limit, self._upper_position_limit)
-        return actions
-
-    def _apply_effort_limits(self, actions):
-        """Applies effort limits to the actions."""
-        actions = np.clip(actions, -self._effort_limit, self._effort_limit)
-        return actions
 
     def update(self, obs_dict: dict[str, torch.Tensor]) -> None:
         """Update the underlying model based on the observations from the environment/real robot.
@@ -153,14 +129,11 @@ class UnitreeG1(Robot):
     def _send_torque_command(self, torques: np.ndarray | None = None) -> None:
         """Send torque commands to the robot"""
         if torques:
-
-            torques = np.clip(torques, -self._effort_limits, self._effort_limits)
             self._g1_sdk.publish_joint_torque_cmd(torques.flatten())
 
     def _send_position_command(self, positions: np.ndarray | None = None) -> None:
         """Send position commands to the robot"""
         if positions is not None:
-            positions = np.clip(positions, self._lower_position_limit, self._upper_position_limit)
             self._g1_sdk.publish_joint_position_cmd(positions.flatten())
 
     def visualize(self, **payload) -> None:
@@ -171,7 +144,7 @@ class UnitreeG1(Robot):
 
         """
         if "ref_motion_state" in payload:
-            self._kinematic_model.visualize_ref_state(payload["ref_motion_state"])
+            self._kinematic_model.visualize_ref_state(payload["mask"], payload["ref_motion_state"])
 
     def step(self, actions: np.ndarray | None = None, nsteps: int = 1) -> None:
         """Step the simulation forward nsteps with the given action.
@@ -183,9 +156,6 @@ class UnitreeG1(Robot):
         self._kinematic_model.forward()
         self._kinematic_model.update_viewer()
         self.send_command(actions)
-        self.counter += 1
-        # if (self.counter % 5):
-        #     import ipdb; ipdb.set_trace()
 
     def get_body_ids(self, body_names: list[str] | None = None) -> dict[str, int]:
         """Get the IDs of all bodies in the model, indexed after removing the world body.

@@ -64,6 +64,7 @@ def main():
 
         reset_env = evaluator.collect(dones=dones, info=extras)
         if reset_env and not evaluator.is_evaluation_complete():
+            evaluator.visualize(dt=env_cfg.dt * env_cfg.decimation)
             evaluator.forward_motion_samples()
             _ = player.reset()
 
