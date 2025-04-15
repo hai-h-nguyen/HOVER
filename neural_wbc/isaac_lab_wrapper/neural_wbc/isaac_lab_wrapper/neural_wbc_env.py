@@ -75,7 +75,7 @@ class NeuralWBCEnv(DirectRLEnv):
 
         # Resolve the extended bodies
         self._body_names_extend = self._body_names + self.cfg.extend_body_names
-        additional_ids = list(range(len(self._body_names), len(self._body_names_extend)))
+        additional_ids = [i + 1 + max(self._body_ids) for i in range(len(self.cfg.extend_body_names))]
         self._body_ids_extend = self._body_ids + additional_ids
         print_config("self._body_ids_extend", self._body_names_extend, self._body_ids_extend)
 

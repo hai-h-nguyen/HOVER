@@ -26,9 +26,9 @@ class NeuralWBCRewardCfg_G1:
         "reward_track_body_position_extended": 1.0,
         "reward_track_body_position_vr_key_points": 1.6,
         "reward_track_body_position_feet": 2.1,
-        "reward_track_body_rotation_extended": 0.5,
-        "reward_track_body_angular_velocities_extended": 0.5,
-        "reward_track_body_velocities_extended": 0.5,
+        "reward_track_body_rotation_extended": 0.5, # 0.6
+        "reward_track_body_angular_velocities_extended": 0.5, # 0.2
+        "reward_track_body_velocities_extended": 0.5, # 0.2
         "reward_track_joint_positions": 0.75,
         "reward_track_joint_velocities": 0.5,
         "penalize_torques": -0.000001,
@@ -38,23 +38,23 @@ class NeuralWBCRewardCfg_G1:
         "penalize_slippage": -1.0,
         "penalize_by_joint_pos_limits": -10.0,
         "penalize_by_joint_velocity_limits": -5.0,
-        "penalize_by_torque_limits": -5,
+        "penalize_by_torque_limits": -5.0,
         "penalize_early_termination": -200.0,
     }
 
     # Sigmas for exponential terms
-    body_pos_lower_body_sigma = 0.1
-    body_pos_upper_body_sigma = 0.03
-    body_pos_vr_key_points_sigma = 0.03
-    body_pos_feet_sigma = 0.03
-    body_rot_sigma = 1.0
-    body_vel_sigma = 1.0
-    body_ang_vel_sigma = 1.0
-    joint_pos_sigma = 1.0
-    joint_vel_sigma = 1.0
+    body_pos_lower_body_sigma = 0.1 # 0.03
+    body_pos_upper_body_sigma = 0.03 # 0.01
+    body_pos_vr_key_points_sigma = 0.03 # 0.01
+    body_pos_feet_sigma = 0.03 # 0.01
+    body_rot_sigma = 1.0 # 0.1
+    body_vel_sigma = 1.0 # 10.0
+    body_ang_vel_sigma = 1.0 # 10.0
+    joint_pos_sigma = 1.0 # 0.1 
+    joint_vel_sigma = 1.0 # 10.0
 
     # Weights for weighted sums
-    body_pos_lower_body_weight = 0.5
+    body_pos_lower_body_weight = 0.5 # 0.75
     body_pos_upper_body_weight = 1.0
 
     # Limits

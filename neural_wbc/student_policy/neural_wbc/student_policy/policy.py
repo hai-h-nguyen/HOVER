@@ -18,9 +18,70 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 
+class Transformer_Block(nn.Module):
+    def __init__(self, latent_dim, num_head, dropout_rate) -> None:
+        super().__init__()
+        self.num_head = num_head
+        self.latent_dim = latent_dim
+        self.ln_1 = nn.LayerNorm(latent_dim)
+        self.attn = nn.MultiheadAttention(latent_dim, num_head, dropout=dropout_rate, batch_first=True)
+        self.ln_2 = nn.LayerNorm(latent_dim)
+        self.mlp = nn.Sequential(
+            nn.Linear(latent_dim, 4 * latent_dim),
+            nn.GELU(),
+            nn.Linear(4 * latent_dim, latent_dim),
+            nn.Dropout(dropout_rate),
+        )
+    
+    def forward(self, x):
+        x = self.ln_1(x)
+        x = x + self.attn(x, x, x, need_weights=False)[0]
+        x = self.ln_2(x)
+        x = x + self.mlp(x)
+        
+        return x
+
+class Transformer(nn.Module):
+    def __init__(self, input_dim, output_dim, context_len, latent_dim=128, num_head=4, num_layer=4, dropout_rate=0.1) -> None:
+        super().__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.context_len = context_len
+        self.latent_dim = latent_dim
+        self.num_head = num_head
+        self.num_layer = num_layer
+        self.input_layer = nn.Sequential(
+            nn.Linear(input_dim, latent_dim),
+            nn.Dropout(dropout_rate),
+        )
+        self.weight_pos_embed = nn.Embedding(context_len, latent_dim)
+        self.attention_blocks = nn.Sequential(
+            *[Transformer_Block(latent_dim, num_head, dropout_rate) for _ in range(num_layer)],
+        )
+        self.output_layer = nn.Sequential(
+            nn.LayerNorm(latent_dim),
+            nn.Linear(latent_dim, output_dim),
+        )
+    
+    def forward(self, x):
+        x = self.input_layer(x)
+        x = x + self.weight_pos_embed(torch.arange(x.shape[1], device=x.device))
+        x = self.attention_blocks(x)
+
+        # take the last token
+        x = x[:, -1, :]
+        x = self.output_layer(x)
+
+        return x
 
 class StudentPolicy(nn.Module):
-    def __init__(self, num_obs, num_actions, policy_hidden_dims=[256, 256, 256], activation="elu", noise_std=0.001):
+    def __init__(self, 
+                 num_obs, 
+                 num_actions, 
+                 policy_hidden_dims=[256, 256, 256], 
+                 activation="elu", 
+                 noise_std=0.001,
+                ):
         super().__init__()
 
         activation = get_activation(activation)

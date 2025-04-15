@@ -108,6 +108,9 @@ class RefMotionVisualizer:
             root_pos = ref_motion.root_pos.view(-1, 3)[active_root, :]
             root_pos[:, 2] += 1.0
             root_rot = ref_motion.root_rot.view(-1, 4)[active_root, :]
+            root_vel = ref_motion.root_lin_vel.view(-1, 3)[active_root, :]
+            scales = torch.ones_like(root_pos)
+            scales[:, 2] += abs(root_vel[:, 0])
 
         # Update the position of the visualization markers.
         if active_body_pos.shape[0] != 0:
@@ -132,6 +135,6 @@ class RefMotionVisualizer:
 
         if root_pos.shape[0] != 0:
             self.root_markers.set_visibility(True)
-            self.root_markers.visualize(root_pos, root_rot)
+            self.root_markers.visualize(root_pos, root_rot, scales)
         else:
             self.root_markers.set_visibility(False)
