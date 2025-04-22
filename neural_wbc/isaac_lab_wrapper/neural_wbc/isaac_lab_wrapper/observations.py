@@ -88,6 +88,8 @@ def compute_privileged_observations(env: NeuralWBCEnv, asset: Articulation):
         "rfi_lim_scale": env.rfi_lim / env.cfg.default_rfi_lim,
         "contact_forces": contact_forces.reshape(contact_forces.shape[0], -1),
         "recovery_counters": torch.clamp_max(env.recovery_counters.unsqueeze(1), 1),
+        "joint_friction": asset.data.joint_friction,
+        "joint_armature": asset.data.joint_armature,
     }
     privileged_obs = torch.cat(
         [tensor for tensor in privileged_obs_dict.values()],

@@ -477,14 +477,7 @@ class MotionTrackingMetrics:
             for key, value in self._success_metrics_masked_by_episode.items()
         }
 
-    def print(self):
         """Prints current metrics."""
-        print(f"Number of reference motions: {self.num_motions}")
-        print(f"Success Rate: {self.success_rate:.10f}")
-        print("All: ", " \t\t".join([f"{k}: {v:.3f}" for k, v in self.all_metrics.items()]))
-        print("Succ: ", " \t\t".join([f"{k}: {v:.3f}" for k, v in self.success_metrics.items()]))
-        print("All Masked: ", " \t".join([f"{k}: {v:.3f}" for k, v in self.all_metrics_masked.items()]))
-        print("Succ Masked: ", " \t".join([f"{k}: {v:.3f}" for k, v in self.success_metrics_masked.items()]))
 
     def save(self, directory: str):
         """Saves metrics to a time-stamped json file in ``directory``.
@@ -546,6 +539,8 @@ class Evaluator:
         self._pbar = tqdm(range(self._num_unique_ref_motions // self._num_envs), position=0, leave=True)
         self._curr_steps = 0
         self._num_episodes = 0
+        
+        self._process_action = None
 
     def collect(self, dones: torch.Tensor, info: dict) -> bool:
         """Collects data from a step and updates internal states.
@@ -570,7 +565,6 @@ class Evaluator:
         if self._terminated.sum() == self._num_envs:
             self._aggregate_data()
             self._num_episodes += self._num_envs
-            print(update_str)
             return True
 
         return False
@@ -611,6 +605,20 @@ class Evaluator:
         self._update_failure_metrics(newly_terminated, info)
         self._episode.add_frame(frame)
         self._episode_gt.add_frame(frame_gt)
+
+        if "process_action" in info["data"].keys():
+            if self._process_action is None:
+                self._process_action = info["data"]["process_action"]
+            else:
+                self._process_action = torch.cat((self._process_action, info["data"]["process_action"]), dim=0)
+        
+        if "joint_torques_limit" in info["data"].keys():
+            self._torques_limit = info["data"]["joint_torques_limit"]
+        
+        if "lower_pos_limit" in info["data"].keys():
+            self._lower_pos_limit = info["data"]["lower_pos_limit"]
+        if "upper_pos_limit" in info["data"].keys():
+            self._upper_pos_limit = info["data"]["upper_pos_limit"]
     
     def visualize(self, dt):
         upper_joint_pos_gt = self._episode_gt.upper_body_joint_pos[0].detach().cpu().numpy()
@@ -624,43 +632,57 @@ class Evaluator:
         num_joints = len(self.upper_body_joint_ids) + len(self.lower_body_joint_ids)
         _num_frames = upper_joint_pos.shape[0]
         
-        nb_rows = nb_cols = math.ceil(math.sqrt(num_joints + 3))
+        nb_rows = nb_cols = math.ceil(math.sqrt(num_joints * 2 + 3))
         fig, axs = plt.subplots(nb_rows, nb_cols)
         time = np.linspace(0, _num_frames * dt, _num_frames)
-        
-        for i in range(num_joints):
+
+        for i in range(0, num_joints * 2, 2):
             row = (i) // nb_rows
             col = (i) % nb_cols
             a = axs[row, col]
-            if i in self.upper_body_joint_ids:
-                index = self.upper_body_joint_ids.index(i)
-                a.plot(time, upper_joint_pos[:, index], label="measured")
-                a.plot(time, upper_joint_pos_gt[:, index], label="target")
-            elif i in self.lower_body_joint_ids:
-                index = self.lower_body_joint_ids.index(i)
-                a.plot(time, lower_joint_pos[:, index], label="measured")
-                a.plot(time, lower_joint_pos_gt[:, index], label="target")
-            a.set(xlabel='time [s]', ylabel='Position [rad]', title=f'DOF Position {i}')
+            joint_index = int(i / 2)
+            if joint_index in self.upper_body_joint_ids:
+                sub_index = self.upper_body_joint_ids.index(joint_index)
+                a.plot(time, upper_joint_pos[:, sub_index], label="measured")
+                a.plot(time, upper_joint_pos_gt[:, sub_index], label="target")
+            elif joint_index in self.lower_body_joint_ids:
+                sub_index = self.lower_body_joint_ids.index(joint_index)
+                a.plot(time, lower_joint_pos[:, sub_index], label="measured")
+                a.plot(time, lower_joint_pos_gt[:, sub_index], label="target")
+            a.axhline(y=self._lower_pos_limit[:, joint_index].item(), color='r', linestyle='--')
+            a.axhline(y=self._upper_pos_limit[:, joint_index].item(), color='r', linestyle='--')
+            a.set(xlabel='time [s]', ylabel='Position [rad]', title=f'DOF Position {joint_index}')
             a.legend()
+
+            row = (i + 1) // nb_rows
+            col = (i + 1) % nb_cols
+            a = axs[row, col]
+            a.plot(time, self._process_action[:, joint_index].detach().cpu().numpy(), label='measured')
+            a.axhline(y=self._torques_limit[:, joint_index].item(), color='r', linestyle='--')
+            a.axhline(y=-self._torques_limit[:, joint_index].item(), color='r', linestyle='--')
+            a.set(xlabel='time [s]', ylabel='F/T', title=f'F/T of joint {joint_index}')
+            a.set_yticks(np.arange(-self._torques_limit[:, joint_index].item(), self._torques_limit[:, joint_index].item(), int(2 * self._torques_limit[:, joint_index].item() / 4)))  # Set y-ticks here
+            a.legend()
+
         
-        row = (num_joints) // nb_rows
-        col = (num_joints) % nb_cols
+        row = (num_joints * 2) // nb_rows
+        col = (num_joints * 2) % nb_cols
         a = axs[row, col]
         a.plot(time, root_lin_vel[:, 0], label='measured')
         a.plot(time, root_lin_vel_gt[:, 0], label='target')
         a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity x')
         a.legend()
 
-        row = (num_joints + 1) // nb_rows
-        col = (num_joints + 1) % nb_cols
+        row = (num_joints * 2 + 1) // nb_rows
+        col = (num_joints * 2 + 1) % nb_cols
         a = axs[row, col]
         a.plot(time, root_lin_vel[:, 1], label='measured')
         a.plot(time, root_lin_vel_gt[:, 1], label='target')
         a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity y')
         a.legend()
 
-        row = (num_joints + 2) // nb_rows
-        col = (num_joints + 2) % nb_cols
+        row = (num_joints * 2 + 2) // nb_rows
+        col = (num_joints * 2 + 2) % nb_cols
         a = axs[row, col]
         a.plot(time, root_lin_vel[:, 2], label='measured')
         a.plot(time, root_lin_vel_gt[:, 2], label='target')
@@ -669,6 +691,7 @@ class Evaluator:
 
         plt.subplots_adjust(wspace=0.5, hspace=1.0)
         plt.show()
+        self._process_action = None
 
     def _build_frame(
         self, data: dict, mask: torch.Tensor, num_envs: int, upper_joint_ids: list, lower_joint_ids: list
@@ -689,10 +712,6 @@ class Evaluator:
         #     # breakpoint()
         #     # mask: 10, 23, 3
         #     # data["body_pos"]: 10, 23, 3
-        #     print(mask.shape)
-        #     print(data["body_pos"].shape)
-        #     print(data["body_pos"][mask].shape)
-        #     print("-----------------")
 
         #     data["body_pos_masked"] = data["body_pos"][mask].reshape(num_envs, -1, 3)
         # else:
@@ -777,7 +796,6 @@ class Evaluator:
         """Concludes evaluation by computing, printing and optionally saving metrics."""
         self._pbar.close()
         self._metrics.conclude()
-        self._metrics.print()
         if self._metrics_path:
             self._metrics.save(self._metrics_path)
 
@@ -1267,14 +1285,7 @@ class Evaluator:
 #             for key, value in self._success_metrics_masked_by_episode.items()
 #         }
 
-#     def print(self):
 #         """Prints current metrics."""
-#         print(f"Number of reference motions: {self.num_motions}")
-#         print(f"Success Rate: {self.success_rate:.10f}")
-#         print("All: ", " \t\t".join([f"{k}: {v:.3f}" for k, v in self.all_metrics.items()]))
-#         print("Succ: ", " \t\t".join([f"{k}: {v:.3f}" for k, v in self.success_metrics.items()]))
-#         print("All Masked: ", " \t".join([f"{k}: {v:.3f}" for k, v in self.all_metrics_masked.items()]))
-#         print("Succ Masked: ", " \t".join([f"{k}: {v:.3f}" for k, v in self.success_metrics_masked.items()]))
 
 #     def save(self, directory: str):
 #         """Saves metrics to a time-stamped json file in ``directory``.
@@ -1360,7 +1371,6 @@ class Evaluator:
 #         if self._terminated.sum() == self._num_envs:
 #             self._aggregate_data()
 #             self._num_episodes += self._num_envs
-#             print(update_str)
 #             return True
 
 #         return False
@@ -1495,7 +1505,6 @@ class Evaluator:
 #         """Concludes evaluation by computing, printing and optionally saving metrics."""
 #         self._pbar.close()
 #         self._metrics.conclude()
-#         self._metrics.print()
 #         if self._metrics_path:
 #             self._metrics.save(self._metrics_path)
 

@@ -81,20 +81,18 @@ class NeuralWBCEnv(EnvironmentWrapper):
         )
 
         self._body_ids_original = self._robot.get_body_ids()
+        self._body_ids = {}
         if cfg.body_names is not None:
-            self._body_ids = {}
-            for k, v in self._body_ids_original.items():
-                if k in cfg.body_names:
-                    self._body_ids[k] = v
+            for k in cfg.body_names:
+                self._body_ids[k] = self._body_ids_original[k]
         else:
             self._body_ids = self._body_ids_original
 
         self._joint_ids_original = self._robot.get_joint_ids()
+        self._joint_ids = {}
         if cfg.joint_names is not None:
-            self._joint_ids = {}
-            for k, v in self._joint_ids_original.items():
-                if k in cfg.joint_names:
-                    self._joint_ids[k] = v
+            for k in cfg.joint_names:
+                self._joint_ids[k] = self._joint_ids_original[k]
         else:
             self._joint_ids = self._joint_ids_original
 
@@ -141,12 +139,12 @@ class NeuralWBCEnv(EnvironmentWrapper):
         self._d_gains = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self.device)
         for key, value in self.cfg.stiffness.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._p_gains[:, joint_id_dict[key]] = value
-            print("[INFO]: Setting up p gains", joint_id_dict[key], key, value)
+            self._p_gains[:, joint_id_dict[key]] = value * 0.85
+            print("[INFO]: Setting up p gains", joint_id_dict[key], key, value * 0.85)
         for key, value in self.cfg.damping.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._d_gains[:, joint_id_dict[key]] = value
-            print("[INFO]: Setting up d gains", joint_id_dict[key], key, value)
+            self._d_gains[:, joint_id_dict[key]] = value * 1.15
+            print("[INFO]: Setting up d gains", joint_id_dict[key], key, value * 1.15)
 
         self._effort_limit = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self.device)
         for key, value in self.cfg.effort_limit.items():
@@ -397,8 +395,6 @@ class NeuralWBCEnv(EnvironmentWrapper):
         root_ang_vel = ref_motion_state.root_ang_vel[env_ids]
 
         # Assemble the state of generalized coordinates.
-        # root_pos[:, 2] -= 0.04
-
         qpos = torch.hstack((root_pos, root_quat, joint_pos))
         qvel = torch.hstack((root_ang_vel, root_lin_vel, joint_vel))
 
@@ -553,7 +549,14 @@ class NeuralWBCEnv(EnvironmentWrapper):
             },
             "upper_joint_ids": self.cfg.upper_body_joint_ids,
             "lower_joint_ids": self.cfg.lower_body_joint_ids,
+            "joint_torques_limit": self._effort_limit.detach().clone(),
+            "lower_pos_limit": self._lower_position_limit.detach().clone(),
+            "upper_pos_limit": self._upper_position_limit.detach().clone(),
         }
+        try:
+            self.extras["data"]["process_action"] = self._processed_action.detach().clone()
+        except:
+            self.extras["data"]["process_action"] = torch.zeros((1, self.num_actions), dtype=torch.float32).detach().clone()
 
         base_gravity = self.robot.get_base_projected_gravity(self._base_name)
         # The angular velocity from the Unitree H1 IMU is already provided in the robot's local frame.
@@ -575,7 +578,6 @@ class NeuralWBCEnv(EnvironmentWrapper):
         
         obs_dict.update(student_obs_dict)
         obs_dict["student_policy"] = student_obs
-        # import ipdb; ipdb.set_trace()
         return obs_dict
 
     def _compute_extras(self) -> dict:

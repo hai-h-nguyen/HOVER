@@ -67,6 +67,7 @@ class G1SDKWrapper:
         )
         self._cmd_publisher_thread_ptr.Start()
         print("G1 SDK Wrapper initialized.")
+        self.first_time = 1
 
 
     def _cmd_publisher(self):
@@ -143,7 +144,7 @@ class G1SDKWrapper:
         Args:
             cmd_joint_positions (np.ndarray): An array of joint positions to be published.
         """
-        # # RESET SIM STATE BEFORE RUNNING POLICY, trigger by sending mode 0 to the first motor
+        # RESET SIM STATE BEFORE RUNNING POLICY, trigger by sending mode 0 to the first motor
         # if self.first_time > 0:
         #     self.first_time -=1
         #     self._low_cmd.motor_cmd[0].mode = 0
@@ -196,40 +197,33 @@ class G1SDKWrapper:
         self.control_dt_ = self.cfg.reset_step_dt
         self.duration_ = self.cfg.reset_duration
         desired_joint_positions = desired_joint_positions.flatten()
-
-        # desired_joint_positions = np.array([ 
-        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0, 
-        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
-        #                         0.0, 0., 0.,
-        #                         0.2, 0., 0, 0.6,
-        #                         0.2, -0.2, 0, 0.6])
         
+        desired_joint_positions_init = np.array([-0.1, 0.0, 0.0, 0.3, -0.2, 0.0,
+                                                 -0.1, 0.0, 0.0, 0.3, -0.2, 0.0,
+                                                 0.0, 0.0, 0.0,
+                                                 0.0, 0.0, 0, 0.0,
+                                                 0.0, 0.0, 0, 0.0])
+        
+        print("Resetting G1 to default pose.")
+        print("desired_joint_positions: ", desired_joint_positions)
+        while self.time_ < self.duration_:
+            self.time_ += self.control_dt_
+            ratio = self.time_ / self.duration_
+            print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
+            current_joint_positions = self.joint_positions
+            target_joint_positions = (
+                current_joint_positions + (desired_joint_positions_init - current_joint_positions) * ratio
+            )
+            self.publish_joint_position_cmd(target_joint_positions)
+            # print("current_joint_positions: ", current_joint_positions[0:15])
+            time.sleep(self.control_dt_)
+
         if desired_joint_positions is None:
             desired_joint_positions = np.zeros(self.cfg.num_joints)
-            
-        print("Resetting G1 to given pose.")
+        self.time_ = 0.0
+
+        print("Resetting G1 to initial pose.")
         print("desired_joint_positions: ", desired_joint_positions)
-        # while self.time_ < self.duration_:
-        #     self.time_ += self.control_dt_
-        #     ratio = self.time_ / self.duration_
-        #     print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
-        #     current_joint_positions = self.joint_positions
-        #     target_joint_positions = (
-        #         current_joint_positions + (desired_joint_positions - current_joint_positions) * ratio
-        #     )
-        #     self.publish_joint_position_cmd(target_joint_positions )
-        #     # print("current_joint_positions: ", current_joint_positions[0:15])
-        #     time.sleep(self.control_dt_)
-
-        # self.time_ = 0.0
-
-        # desired_joint_positions = desired_qpos.flatten()
-        # # desired_joint_positions[0:12] = np.array([-0.7878,  0.3228,  0.3979,  0.8753, -0.3570, -0.2657, -0.7720, -0.2410,
-        # #  -0.1448,  0.8237, -0.3983,  0.2650])
-        # # desired_joint_positions[10] = -0.3
-
-        # print("Resetting G1 to initial pose.")
-        # print("desired_joint_positions: ", desired_joint_positions)
         while self.time_ < self.duration_:
             self.time_ += self.control_dt_
             ratio = self.time_ / self.duration_
@@ -241,14 +235,6 @@ class G1SDKWrapper:
             self.publish_joint_position_cmd(target_joint_positions)
             time.sleep(self.control_dt_)
 
-        # self.time_ = 0.0
-
-        # print("Resetting G1 to initial pose.")
-
-        # while self.time_ < self.duration_:
-        #     self.time_ += self.control_dt_
-        #     print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
-        #     time.sleep(self.control_dt_)
         print("\nReset complete.")
 
 

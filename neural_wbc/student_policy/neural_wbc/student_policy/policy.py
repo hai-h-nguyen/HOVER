@@ -74,6 +74,49 @@ class Transformer(nn.Module):
 
         return x
 
+class StudentTransformer(nn.Module):
+    def __init__(self, input_dim, output_dim, context_len, distilled_imitation_dim=168, latent_dim=128,num_head=4, num_layer=4, dropout_rate=0.1):
+        super().__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.context_len = context_len
+        self.distilled_imitation_dim = distilled_imitation_dim
+        self.latent_dim = latent_dim
+        self.num_head = num_head
+        self.num_layer = num_layer
+        self.dropout_rate = dropout_rate
+
+        self.single_len = int((input_dim - distilled_imitation_dim) / (context_len+1))
+        # Transformer model for distilled imitation learning
+        self.transformer = Transformer(self.single_len, output_dim, context_len+2, latent_dim, num_head, num_layer, dropout_rate)
+        self.input_layer = nn.Sequential(nn.Linear(distilled_imitation_dim, self.single_len),
+                                         nn.Dropout(dropout_rate))
+        
+    def forward(self, x):
+        # Indices for slicing
+        robot_state_end = self.single_len - self.output_dim
+        imitation_end = robot_state_end + self.distilled_imitation_dim
+        last_action_end = self.single_len + self.distilled_imitation_dim
+
+        # Slice inputs
+        x_distilled_robot_state = x[:, :robot_state_end]
+        x_distilled_imitation = x[:, robot_state_end:imitation_end]
+        x_last_action = x[:, imitation_end:last_action_end]
+        x_history = x[:, last_action_end:]
+
+        # Reshape history and transpose to (batch, context_len, single_len)
+        x_history = x_history.view(-1, self.single_len, self.context_len).transpose(1, 2)
+
+        # Prepare current state and imitation embeddings
+        x_current = torch.cat([x_distilled_robot_state, x_last_action], dim=1).unsqueeze(1)
+        x_imitation = self.input_layer(x_distilled_imitation).unsqueeze(1)
+
+        # Concatenate along sequence dimension: [current, imitation, history]
+        x = torch.cat([x_current, x_imitation, x_history], dim=1)
+
+        # Pass through transformer
+        return self.transformer(x)
+
 class StudentPolicy(nn.Module):
     def __init__(self, 
                  num_obs, 

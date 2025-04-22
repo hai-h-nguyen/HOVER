@@ -69,7 +69,7 @@ class RefMotionVisualizer:
         root_marker_cfg.markers = {
             "arrow_x": sim_utils.UsdFileCfg(
                 usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",
-                scale=(0.1, 0.1, 0.5),
+                scale=(0.05, 0.05, 0.25),
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 1.0)),
             ),
             }
@@ -110,7 +110,7 @@ class RefMotionVisualizer:
             root_rot = ref_motion.root_rot.view(-1, 4)[active_root, :]
             root_vel = ref_motion.root_lin_vel.view(-1, 3)[active_root, :]
             scales = torch.ones_like(root_pos)
-            scales[:, 2] += abs(root_vel[:, 0])
+            scales[:, 0] += abs(root_vel[:, 0])
 
         # Update the position of the visualization markers.
         if active_body_pos.shape[0] != 0:

@@ -34,7 +34,7 @@ from .rewards import NeuralWBCRewardCfg_G1
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder.*link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -43,15 +43,19 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder_roll_link.*",
+            ".*shoulder.*link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],
-        "lower_body": [".*ankle_roll_link.*"],
+        "lower_body": [".*ankle.*link.*"],
     },
     "omnih2o": {
         "upper_body": [".*hand.*link.*", ".*head.*link.*"],
     },
+    "vr": {
+        "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": ["waist.*joint.*", "root.*"],
+    }
 }
 
 # If one is enabled, other will also be enabled
@@ -181,7 +185,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # General parameters:
     action_space = 23
     observation_space = 1073
-    state_space = 1163
+    state_space = 1209
+    # state_space = 1163
 
     # Distillation parameters:
     single_history_dim = 75
@@ -191,8 +196,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
-    # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    # distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
@@ -358,9 +363,6 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_elbow_joint": 2.0,
 
         "right_shoulder_pitch_joint": 2.0,
-        "right_shoulder_roll_joint": 2.0,
-        "right_shoulder_yaw_joint": 2.0,
-        "right_elbow_joint": 2.0,
         "right_shoulder_roll_joint": 2.0,
         "right_shoulder_yaw_joint": 2.0,
         "right_elbow_joint": 2.0,

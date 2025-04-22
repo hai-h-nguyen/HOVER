@@ -23,7 +23,7 @@ from neural_wbc.data import get_data_path
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [".*shoulder.*link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -32,15 +32,19 @@ DISTILL_MASK_MODES_ALL = {
     },
     "h2o": {
         "upper_body": [
-            ".*shoulder_roll_link.*",
+            ".*shoulder.*link.*",
             ".*elbow.*link.*",
             ".*hand.*link.*",
         ],
-        "lower_body": [".*ankle_roll_link.*"],
+        "lower_body": [".*ankle.*link.*"],
     },
     "omnih2o": {
         "upper_body": [".*hand.*link.*", ".*head.*link.*"],
     },
+    "vr": {
+        "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": ["waist.*joint.*", "root.*"],
+    }
 }
 
 
@@ -108,7 +112,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                 ]
 
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"exbody": DISTILL_MASK_MODES_ALL["exbody"]}
+    distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
@@ -244,7 +248,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     position_limit = {
         "left_hip_pitch_joint": [-2.5307, 2.8798],
         "left_hip_roll_joint": [-0.5236, 2.9671],
-        "left_hip_yaw_joint": [-2,7576, 2.7576],
+        "left_hip_yaw_joint": [-2.7576, 2.7576],
         "left_knee_joint": [-0.087267, 2.8798],
         "left_ankle_pitch_joint": [-0.87267, 0.5236],
         "left_ankle_roll_joint": [-0.2618, 0.2618],

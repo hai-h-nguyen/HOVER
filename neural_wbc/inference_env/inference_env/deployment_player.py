@@ -98,8 +98,6 @@ class DeploymentPlayer:
     def play_once(self, ext_actions: torch.Tensor | None = None):
         """Advances the environment one time step after generating observations"""
         obs = self.env.get_observations()
-        # print(obs[:, :100])
-        # exit()
         with torch.inference_mode():
             if ext_actions is not None:
                 actions = ext_actions
