@@ -30,7 +30,7 @@ from isaaclab.utils import configclass
 from .events import NeuralWBCPlayEventCfg, NeuralWBCTrainEventCfg
 from .neural_wbc_env_cfg import NeuralWBCEnvCfg
 from .terrain import HARD_ROUGH_TERRAINS_CFG, flat_terrain
-from .rewards import NeuralWBCRewardCfg_G1
+from .rewards import NeuralWBCRewardCfg_G1, NeuralWBCRewardCfg_G1_4_DeltaAction
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
@@ -185,8 +185,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # General parameters:
     action_space = 23
     observation_space = 1073
-    state_space = 1209
-    # state_space = 1163
+    # state_space = 1209
+    state_space = 1163
 
     # Distillation parameters:
     single_history_dim = 75
@@ -266,7 +266,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     lower_body_joint_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # hips, knees, ankles, torso
     upper_body_joint_ids = [15, 16, 17, 18, 19, 20, 21, 22]  # shoulders, elbows
 
-    base_name = "pelvis"
+    base_name = "torso_link"
     root_id = body_names.index(base_name)
 
     feet_name = ".*_ankle_roll_link"
@@ -312,63 +312,61 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_hip_pitch_joint": 100.0,
         "left_hip_roll_joint": 100.0,
         "left_hip_yaw_joint": 100.0,
-        "left_knee_joint": 150.0,
-        "left_ankle_pitch_joint": 40.0,
-        "left_ankle_roll_joint": 40.0,
+        "left_knee_joint": 200.0,
+        "left_ankle_pitch_joint": 20.0,
+        "left_ankle_roll_joint": 20.0,
 
         "right_hip_pitch_joint": 100.0,
         "right_hip_roll_joint": 100.0,
         "right_hip_yaw_joint": 100.0,
-        "right_knee_joint": 150.0,
-        "right_ankle_pitch_joint": 40.0,
-        "right_ankle_roll_joint": 40.0,
+        "right_knee_joint": 200.0,
+        "right_ankle_pitch_joint": 20.0,
+        "right_ankle_roll_joint": 20.0,
 
-        "waist_yaw_joint": 300,
-        "waist_roll_joint": 300,
-        "waist_pitch_joint": 300,
+        "waist_yaw_joint": 120,
+        "waist_roll_joint": 120,
+        "waist_pitch_joint": 120,
 
-        "left_shoulder_pitch_joint": 100.0,
-        "left_shoulder_roll_joint": 100.0,
-        "left_shoulder_yaw_joint": 50.0,
-        "left_elbow_joint": 50.0,
+        "left_shoulder_pitch_joint": 40.0,
+        "left_shoulder_roll_joint": 40.0,
+        "left_shoulder_yaw_joint": 40.0,
+        "left_elbow_joint": 60.0,
 
-        "right_shoulder_pitch_joint": 100.0,
-        "right_shoulder_roll_joint": 100.0,
-        "right_shoulder_yaw_joint": 50.0,
-        "right_elbow_joint": 50.0,
+        "right_shoulder_pitch_joint": 40.0,
+        "right_shoulder_roll_joint": 40.0,
+        "right_shoulder_yaw_joint": 40.0,
+        "right_elbow_joint": 60.0, 
     }
 
     damping = {
-        "left_hip_pitch_joint": 2.0,
-        "left_hip_roll_joint": 2.0,
-        "left_hip_yaw_joint": 2.0,
-        "left_knee_joint": 4.0,
-        "left_ankle_pitch_joint": 2.0,
-        "left_ankle_roll_joint": 2.0,
+        "left_hip_pitch_joint": 2.5,
+        "left_hip_roll_joint": 2.5,
+        "left_hip_yaw_joint": 2.5,
+        "left_knee_joint": 5.0,
+        "left_ankle_pitch_joint": 0.2,
+        "left_ankle_roll_joint": 0.1,
 
-        "right_hip_pitch_joint": 2.0,
-        "right_hip_roll_joint": 2.0,
-        "right_hip_yaw_joint": 2.0,
-        "right_knee_joint": 4.0,
-        "right_ankle_pitch_joint": 2.0,
-        "right_ankle_roll_joint": 2.0,
+        "right_hip_pitch_joint": 2.5,
+        "right_hip_roll_joint": 2.5,
+        "right_hip_yaw_joint": 2.5,
+        "right_knee_joint": 5.0,
+        "right_ankle_pitch_joint": 0.2,
+        "right_ankle_roll_joint": 0.1,
 
         "waist_yaw_joint": 3.0,
         "waist_roll_joint": 3.0,
         "waist_pitch_joint": 3.0,
 
-        "left_shoulder_pitch_joint": 2.0,
-        "left_shoulder_roll_joint": 2.0,
-        "left_shoulder_yaw_joint": 2.0,
-        "left_elbow_joint": 2.0,
+        "left_shoulder_pitch_joint": 1.0,
+        "left_shoulder_roll_joint": 1.0,
+        "left_shoulder_yaw_joint": 1.0,
+        "left_elbow_joint": 1.5,
 
-        "right_shoulder_pitch_joint": 2.0,
-        "right_shoulder_roll_joint": 2.0,
-        "right_shoulder_yaw_joint": 2.0,
-        "right_elbow_joint": 2.0,
+        "right_shoulder_pitch_joint": 1.0,
+        "right_shoulder_roll_joint": 1.0,
+        "right_shoulder_yaw_joint": 1.0,
+        "right_elbow_joint": 1.5,
     }
-
-
 
     mass_randomized_body_names = [
         "pelvis",
@@ -440,6 +438,24 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                 region_modes = list(self.distill_mask_modes.values())[0]
                 if len(region_modes) == 1:
                     self.reset_mask = False
+        elif self.mode == NeuralWBCModes.DELTA_ACTION:
+            self.max_ref_motion_dist = 0.5
+            self.events = NeuralWBCTrainEventCfg()
+            self.events.reset_robot_rigid_body_mass.params["asset_cfg"].body_names = self.mass_randomized_body_names
+            self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
+            self.add_policy_obs_noise = False
+            self.reset_mask = True
+            self.resample_motions = False
+            # Do not reset mask when there is only one mode.
+            num_regions = len(self.distill_mask_modes)
+            if num_regions == 1:
+                region_modes = list(self.distill_mask_modes.values())[0]
+                if len(region_modes) == 1:
+                    self.reset_mask = False
+                    
+            self.rewards = NeuralWBCRewardCfg_G1_4_DeltaAction()
+            self.recorded_data_path = "/home/rtx4/HOVER/test.h5"
+
         elif self.mode == NeuralWBCModes.TEST:
             self.terrain = flat_terrain
             self.events = NeuralWBCPlayEventCfg()

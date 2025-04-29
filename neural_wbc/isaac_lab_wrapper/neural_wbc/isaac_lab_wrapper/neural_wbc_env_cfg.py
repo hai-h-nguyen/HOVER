@@ -136,6 +136,8 @@ class NeuralWBCEnvCfg(DirectRLEnvCfg):
     # Whether to reset mask. Default to false as teacher training does not require mask resetting
     reset_mask = False
     
+    recorded_data_path = None
+    
     def __post_init__(self):
         super().__post_init__()
 

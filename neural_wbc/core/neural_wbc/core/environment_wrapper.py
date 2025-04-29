@@ -44,7 +44,7 @@ class EnvironmentWrapper:
 
     def get_observations(self) -> torch.Tensor:
         """Gets policy observations for each environment based on the mode."""
-        if self._mode.is_distill_mode():
+        if self._mode.is_distill_mode() or self._mode.is_delta_action_mode() or self._mode.is_finetune_mode():
             return self.get_student_observations()
         return self.get_teacher_observations()
 

@@ -17,8 +17,12 @@
 from __future__ import annotations
 
 import pprint
+import numpy as np
 import torch
 from typing import TYPE_CHECKING
+import h5py
+import random
+import copy
 
 from neural_wbc.core import ReferenceMotionManager, ReferenceMotionState, mask
 from neural_wbc.core.observations import StudentHistory
@@ -178,6 +182,9 @@ class NeuralWBCEnv(DirectRLEnv):
             body_names=self._body_names_extend,
             joint_names=self._joint_names,
         )
+        self.recorded_sample = [None] * self.num_envs
+        if self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
+            self._sample_recorded_data(recorded_path=self.cfg.recorded_data_path)
         self._mask = torch.ones((self.num_envs, len(self.mask_element_names)), dtype=torch.bool, device=self.device)
         self._reset_mask()
 
@@ -221,7 +228,12 @@ class NeuralWBCEnv(DirectRLEnv):
             random_sample=(self.cfg.mode.is_training_mode()),
             extend_head=True,
             dt=self.cfg.decimation * self.cfg.dt,
+            load_motions= not (self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode()),
         )
+        if self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
+            motion_sample_ids = torch.tensor([p["ref_motion_id"] for p in self.recorded_sample]).to(self.device)
+            self._ref_motion_mgr.load_motions_with_ids(sample_idxes=motion_sample_ids)
+
         self.ref_episodic_offset = torch.zeros(
             self.num_envs, 3, dtype=torch.float, device=self.device, requires_grad=False
         )
@@ -276,7 +288,7 @@ class NeuralWBCEnv(DirectRLEnv):
         self.penalty_scale = 0.5
 
         # Distill
-        if self.cfg.mode.is_distill_mode():
+        if self.cfg.mode.is_distill_mode() or self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
             self.history = StudentHistory(
                 num_envs=self.num_envs,
                 device=self.device,
@@ -338,6 +350,33 @@ class NeuralWBCEnv(DirectRLEnv):
                 device=self.device,
                 num_envs=len(env_ids),
             )
+        elif self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
+            if env_ids is None or len(env_ids) == self.num_envs:
+                env_ids = self._robot._ALL_INDICES
+            self._mask[env_ids] = torch.cat([self.recorded_sample[env_id]["mask"] for env_id in env_ids], dim=0)
+
+    def _sample_recorded_data(self, recorded_path: str, env_ids: torch.Tensor | None = None):
+        if env_ids is None or len(env_ids) == self.num_envs:
+            env_ids = self._robot._ALL_INDICES
+        with h5py.File(recorded_path, "r") as f:
+            size = f.attrs["size"]
+            indicies = random.choices(range(size), k=len(env_ids))
+
+            for i, idx in enumerate(indicies):
+                group = f[f"episode_{idx}"]
+                sample = {
+                    "length": group.attrs["len"],
+                    "ref_motion_id": group["reference_motion_id"][()],
+                    "mask": torch.tensor(group["mask_mode"][:], device=self.device),
+                    "action": torch.tensor(group["action"][:], device=self.device),
+                    "root_pos": torch.tensor(group["robot_state"]["root_pos"][:], device=self.device),
+                    "root_lin_vel": torch.tensor(group["robot_state"]["root_lin_vel"][:], device=self.device),
+                    "root_ang_vel": torch.tensor(group["robot_state"]["root_ang_vel"][:], device=self.device),
+                    "root_rot": torch.tensor(group["robot_state"]["root_rot"][:], device=self.device),
+                    "joint_pos": torch.tensor(group["robot_state"]["joint_pos"][:], device=self.device),
+                    "joint_vel": torch.tensor(group["robot_state"]["joint_vel"][:], device=self.device),
+                    }
+                self.recorded_sample[env_ids[i]] = sample
 
     def _pre_physics_step(self, actions: torch.Tensor):
         # Update recovery counters
@@ -362,7 +401,10 @@ class NeuralWBCEnv(DirectRLEnv):
     def _apply_action(self):
         # We define our own control law that can update at every physics step. Therefore we put
         # this computation here.
-        actions_scaled = self.actions * self.cfg.action_scale
+        self.actions_real = torch.zeros_like(self.actions)
+        if self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
+            self.actions_real = torch.cat([self.recorded_sample[env_id]["action"][self.episode_length_buf[env_id]] for env_id in range(self.num_envs)], dim=0)
+        actions_scaled = (self.actions + self.actions_real) * self.cfg.action_scale
         self._processed_actions = self._control_fn(self, actions_scaled, joint_ids=self._joint_ids)
 
         # Adding noise to the control signal to enhance robustness. `torque_limits` is using IsaacLab
@@ -387,6 +429,11 @@ class NeuralWBCEnv(DirectRLEnv):
             extend_body_parent_ids=self.extend_body_parent_ids,
             extend_body_pos=self.extend_body_pos,
         )
+        if self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
+            self._previous_body_state = copy.deepcopy(body_state)
+        else:
+            self._previous_body_state = None
+
         ref_motion_state: ReferenceMotionState = self._ref_motion_mgr.get_state_from_motion_lib_cache(
             episode_length_buf=self.episode_length_buf,
             offset=self._start_positions_on_terrain,
@@ -446,6 +493,7 @@ class NeuralWBCEnv(DirectRLEnv):
         )
         reward_sum, rewards = self._rewards.compute_reward(
             body_state=body_state,
+            previous_body_state=self._previous_body_state,
             ref_motion_state=ref_motion_state,
             articulation_data=self._robot.data,
             previous_actions=self._previous_actions,
@@ -478,22 +526,27 @@ class NeuralWBCEnv(DirectRLEnv):
             extend_body_pos=self.extend_body_pos,
             root_id=self.cfg.root_id,
         )
-        died, self._termination_conditions = check_termination_conditions(
-            training_mode=self.cfg.mode.is_training_mode(),
-            body_state=body_state,
-            ref_motion_state=ref_motion_state,
-            projected_gravity=self._robot.data.projected_gravity_b,
-            gravity_x_threshold=self.cfg.gravity_x_threshold,
-            gravity_y_threshold=self.cfg.gravity_y_threshold,
-            ref_motion_mgr=self._ref_motion_mgr,
-            episode_times=self._get_episode_times(),
-            max_ref_motion_dist=self.cfg.max_ref_motion_dist,
-            in_recovery=self.recovery_counters.unsqueeze(1) != 0,
-            mask=self._mask,
-            # We only need the last net contact forces.
-            net_contact_forces=self.contact_sensor.data.net_forces_w_history[:, 0, :, :],
-            undesired_contact_body_ids=self._undesired_contact_body_ids,
-        )
+        if self.cfg.mode.is_delta_action_mode():
+            self._termination_conditions = {}
+            self._termination_conditions["reference_motion_length"] = self._ref_motion_mgr.episodes_exceed_motion_length(episode_times=self._get_episode_times())
+            died = torch.any(torch.cat(list(self._termination_conditions.values()), dim=1), dim=1)
+        else:
+            died, self._termination_conditions = check_termination_conditions(
+                training_mode=self.cfg.mode.is_training_mode(),
+                body_state=body_state,
+                ref_motion_state=ref_motion_state,
+                projected_gravity=self._robot.data.projected_gravity_b,
+                gravity_x_threshold=self.cfg.gravity_x_threshold,
+                gravity_y_threshold=self.cfg.gravity_y_threshold,
+                ref_motion_mgr=self._ref_motion_mgr,
+                episode_times=self._get_episode_times(),
+                max_ref_motion_dist=self.cfg.max_ref_motion_dist,
+                in_recovery=self.recovery_counters.unsqueeze(1) != 0,
+                mask=self._mask,
+                # We only need the last net contact forces.
+                net_contact_forces=self.contact_sensor.data.net_forces_w_history[:, 0, :, :],
+                undesired_contact_body_ids=self._undesired_contact_body_ids,
+            )
 
         self.extras["termination_conditions"] = self._termination_conditions
 
@@ -502,7 +555,10 @@ class NeuralWBCEnv(DirectRLEnv):
         ) and self.cfg.resample_motions
 
         time_out |= self.is_resample_reference_motion_step
-
+        if self.cfg.mode.is_delta_action_mode():
+            step = torch.tensor([self.recorded_sample[env_id]["length"] for env_id in range(self.num_envs)], device=self.device)
+            out_of_recorded_range = self.episode_length_buf >= step
+            time_out |= out_of_recorded_range
         return died, time_out
 
     def _reset_idx(self, env_ids: torch.Tensor | None):
@@ -531,7 +587,7 @@ class NeuralWBCEnv(DirectRLEnv):
         self.recovery_counters[env_ids] = 0.0
 
         # reset history
-        if self.cfg.mode.is_distill_mode():
+        if self.cfg.mode.is_distill_mode() or self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
             self.history.reset(env_ids=env_ids)
 
         # reset mask

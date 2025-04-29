@@ -15,7 +15,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import re
+import numpy as np
+import math
 
+class Filter:
+    def __init__(self, T1, Ts, num_dofs):
+        self.T1 = T1
+        self.Ts = Ts
+        self.num_dofs = num_dofs
+
+        self.V1 = 1 / Ts * (1 - math.exp(-Ts / T1))
+        self.V2 = 1 / Ts * (1 - math.exp(-Ts / T1)) ** 2
+
+        # Persistent state for DT1: shape [batch_size]
+        self.x = [None] * num_dofs
+
+    def dt1_filter(self, q):
+        """
+        q: numpy array of shape [num_dofs]
+        Returns: estimated derivative (velocity), shape [num_dofs]
+        """
+        qp = np.zeros(self.num_dofs)
+        for i in range(self.num_dofs):
+            if self.x[i] is None:
+                self.x[i] = -1.0 / self.T1 * q[i]  # initialize state
+                qp[i] = 0
+            else:
+                qp[i] = self.x[i] + self.V1 * q[i]
+                self.x[i] = (math.exp(-self.Ts / self.T1) * self.x[i] +
+                             (math.exp(-self.Ts / self.T1) - 1) * self.V1 * q[i])
+        return qp
 
 def assert_equal(lhs: any, rhs: any, name: str):
     """Assert that 2 values are equal and provide a useful error if not.

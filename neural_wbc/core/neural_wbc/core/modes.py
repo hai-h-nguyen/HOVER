@@ -20,15 +20,31 @@ class NeuralWBCModes(enum.Enum):
     TEST = 1
     DISTILL = 2
     DISTILL_TEST = 3
+    DELTA_ACTION = 4
+    DELTA_ACTION_TEST = 5
+    FINETUNE = 6
+    FINETUNE_TEST = 7
 
     def is_distill_mode(self):
         return self in {self.DISTILL, self.DISTILL_TEST}
 
-    def is_training_mode(self):
-        return self in {self.DISTILL, self.TRAIN}
-
-    def is_test_mode(self):
-        return self in {self.TEST, self.DISTILL_TEST}
-
     def is_distill_test_mode(self):
         return self == self.DISTILL_TEST
+    
+    def is_delta_action_mode(self):
+        return self in {self.DELTA_ACTION, self.DELTA_ACTION_TEST}
+    
+    def is_delta_action_test_mode(self):
+        return self == self.DELTA_ACTION_TEST
+    
+    def is_finetune_mode(self):
+        return self in {self.FINETUNE, self.FINETUNE_TEST}
+
+    def is_finetune_test_mode(self):
+        return self == self.FINETUNE_TEST
+
+    def is_training_mode(self):
+        return self in {self.TRAIN, self.DISTILL, self.DELTA_ACTION, self.FINETUNE}
+
+    def is_test_mode(self):
+        return self in {self.TEST, self.DISTILL_TEST, self.DELTA_ACTION_TEST, self.FINETUNE_TEST}

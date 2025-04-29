@@ -141,10 +141,11 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     robot_actuation_type: Literal["Pos", "Torque"] = "Pos"
 
     # hardware parameters
-    # network_interface = "eno1"
-    network_interface = "lo"
+    network_interface = "eno1"
+    # network_interface = "lo"
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
+    information_channel = "rt/info4debug"
     subscriber_freq = 10
     reset_duration = 5.0   # seconds
     reset_step_dt = 0.02  # seconds
@@ -285,19 +286,19 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
         "right_ankle_pitch_joint": 40.,
         "right_ankle_roll_joint": 40.,
         
-        "waist_yaw_joint": 300.,
-        "waist_roll_joint": 300.,
-        "waist_pitch_joint": 300.,
+        "waist_yaw_joint": 120.,
+        "waist_roll_joint": 120.,
+        "waist_pitch_joint": 120.,
         
-        "left_shoulder_pitch_joint": 100.,
-        "left_shoulder_roll_joint": 100.,
-        "left_shoulder_yaw_joint": 50.,
-        "left_elbow_joint": 50.,
+        "left_shoulder_pitch_joint": 40.,
+        "left_shoulder_roll_joint": 40.,
+        "left_shoulder_yaw_joint": 40.,
+        "left_elbow_joint": 60.,
         
-        "right_shoulder_pitch_joint": 100.,
-        "right_shoulder_roll_joint": 100.,
-        "right_shoulder_yaw_joint": 50.,
-        "right_elbow_joint": 50.,
+        "right_shoulder_pitch_joint": 40.,
+        "right_shoulder_roll_joint": 40.,
+        "right_shoulder_yaw_joint": 40.,
+        "right_elbow_joint": 60.,
 
         # fixed wrists
         "left_wrist_roll_joint": 20.,

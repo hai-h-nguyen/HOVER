@@ -112,7 +112,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                 ]
 
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"h2o": DISTILL_MASK_MODES_ALL["h2o"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
@@ -153,19 +153,19 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_ankle_pitch_joint": 40.,
         "right_ankle_roll_joint": 40.,
         
-        "waist_yaw_joint": 300.,
-        "waist_roll_joint": 300.,
-        "waist_pitch_joint": 300.,
+        "waist_yaw_joint": 120.,
+        "waist_roll_joint": 120.,
+        "waist_pitch_joint": 120.,
         
-        "left_shoulder_pitch_joint": 100.,
-        "left_shoulder_roll_joint": 100.,
-        "left_shoulder_yaw_joint": 50.,
-        "left_elbow_joint": 50.,
+        "left_shoulder_pitch_joint": 40.,
+        "left_shoulder_roll_joint": 40.,
+        "left_shoulder_yaw_joint": 40.,
+        "left_elbow_joint": 60.,
         
-        "right_shoulder_pitch_joint": 100.,
-        "right_shoulder_roll_joint": 100.,
-        "right_shoulder_yaw_joint": 50.,
-        "right_elbow_joint": 50.,
+        "right_shoulder_pitch_joint": 40.,
+        "right_shoulder_roll_joint": 40.,
+        "right_shoulder_yaw_joint": 40.,
+        "right_elbow_joint": 60.,
 
         # fixed wrists
         "left_wrist_roll_joint": 20.,
@@ -195,15 +195,15 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "waist_roll_joint": 3.,
         "waist_pitch_joint": 3.,
         
-        "left_shoulder_pitch_joint": 2.,
-        "left_shoulder_roll_joint": 2.,
-        "left_shoulder_yaw_joint": 2.,
-        "left_elbow_joint": 2.,
+        "left_shoulder_pitch_joint": 1.,
+        "left_shoulder_roll_joint": 1.,
+        "left_shoulder_yaw_joint": 1.,
+        "left_elbow_joint": 1.5,
         
-        "right_shoulder_pitch_joint": 2.,
-        "right_shoulder_roll_joint": 2.,
-        "right_shoulder_yaw_joint": 2.,
-        "right_elbow_joint": 2.,
+        "right_shoulder_pitch_joint": 1.,
+        "right_shoulder_roll_joint": 1.,
+        "right_shoulder_yaw_joint": 1.,
+        "right_elbow_joint": 1.5,
 
         # fixed wrists
         "left_wrist_roll_joint": 1.,

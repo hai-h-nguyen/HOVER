@@ -57,7 +57,7 @@ def compute_observations(
     obs_dict["critic"] = torch.cat([teacher_obs, privileged_obs], dim=1)
 
     # If we are in a distill mode, add student observations.
-    if env.cfg.mode.is_distill_mode():
+    if env.cfg.mode.is_distill_mode() or env.cfg.mode.is_delta_action_mode() or env.cfg.mode.is_finetune_mode():
         base_id = env._body_names.index(env.base_name)
         student_obs, student_obs_dict = compute_student_observations(
             base_id=base_id,
@@ -88,8 +88,8 @@ def compute_privileged_observations(env: NeuralWBCEnv, asset: Articulation):
         "rfi_lim_scale": env.rfi_lim / env.cfg.default_rfi_lim,
         "contact_forces": contact_forces.reshape(contact_forces.shape[0], -1),
         "recovery_counters": torch.clamp_max(env.recovery_counters.unsqueeze(1), 1),
-        "joint_friction": asset.data.joint_friction,
-        "joint_armature": asset.data.joint_armature,
+        # "joint_friction": asset.data.joint_friction,
+        # "joint_armature": asset.data.joint_armature,
     }
     privileged_obs = torch.cat(
         [tensor for tensor in privileged_obs_dict.values()],

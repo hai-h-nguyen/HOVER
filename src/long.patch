@@ -1,0 +1,72 @@
+diff --git a/unitree_sdk2py/idl/default.py b/unitree_sdk2py/idl/default.py
+index 89d567d..980de38 100644
+--- a/unitree_sdk2py/idl/default.py
++++ b/unitree_sdk2py/idl/default.py
+@@ -17,6 +17,7 @@ from .unitree_hg.msg.dds_ import MainBoardState_ as HGMainBoardState_
+ from .unitree_hg.msg.dds_ import PressSensorState_ as HGPressSensorState_
+ from .unitree_hg.msg.dds_ import HandCmd_ as HGHandCmd_
+ from .unitree_hg.msg.dds_ import HandState_ as HGHandState_
++from .unitree_hg.msg.dds_ import LogCmd_ as HGLogCmd_
+ 
+ """
+ " builtin_interfaces_msgs.msg.dds_ dafault
+@@ -194,6 +195,11 @@ def unitree_go_msg_dds__WirelessController_():
+ """
+ " unitree_hg.msg.dds_ dafault
+ """
++def unitree_hg_msg_dds__LogCmd_():
++    return HGLogCmd_("", [unitree_hg_msg_dds__MotorCmd_() for i in range(35)],
++                [unitree_hg_msg_dds__MotorState_() for i in range(35)], unitree_hg_msg_dds__IMUState_(),
++                [0 for i in range(35)], [0 for i in range(35)], [0 for i in range(35)])
++
+ def unitree_hg_msg_dds__BmsCmd_():
+     return HGBmsCmd_(0, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+diff --git a/unitree_sdk2py/idl/unitree_hg/.idlpy_manifest b/unitree_sdk2py/idl/unitree_hg/.idlpy_manifest
+index fd4ea94..6896f7c 100644
+--- a/unitree_sdk2py/idl/unitree_hg/.idlpy_manifest
++++ b/unitree_sdk2py/idl/unitree_hg/.idlpy_manifest
+@@ -41,3 +41,6 @@ msg
+ PressSensorState_
+ msg
+ 
++
++LogCmd_
++msg
+\ No newline at end of file
+diff --git a/unitree_sdk2py/idl/unitree_hg/msg/.idlpy_manifest b/unitree_sdk2py/idl/unitree_hg/msg/.idlpy_manifest
+index 3218e96..e96d138 100644
+--- a/unitree_sdk2py/idl/unitree_hg/msg/.idlpy_manifest
++++ b/unitree_sdk2py/idl/unitree_hg/msg/.idlpy_manifest
+@@ -41,3 +41,7 @@ dds_
+ PressSensorState_
+ dds_
+ 
++
++LogCmd_
++dds_
++
+diff --git a/unitree_sdk2py/idl/unitree_hg/msg/dds_/.idlpy_manifest b/unitree_sdk2py/idl/unitree_hg/msg/dds_/.idlpy_manifest
+index 6174f37..850338b 100644
+--- a/unitree_sdk2py/idl/unitree_hg/msg/dds_/.idlpy_manifest
++++ b/unitree_sdk2py/idl/unitree_hg/msg/dds_/.idlpy_manifest
+@@ -41,3 +41,7 @@ MotorState_
+ PressSensorState_
+ 
+ PressSensorState_
++
++LogCmd_ 
++
++LogCmd_ 
+\ No newline at end of file
+diff --git a/unitree_sdk2py/idl/unitree_hg/msg/dds_/__init__.py b/unitree_sdk2py/idl/unitree_hg/msg/dds_/__init__.py
+index 87b865f..12cd45b 100644
+--- a/unitree_sdk2py/idl/unitree_hg/msg/dds_/__init__.py
++++ b/unitree_sdk2py/idl/unitree_hg/msg/dds_/__init__.py
+@@ -16,4 +16,5 @@ from ._MainBoardState_ import MainBoardState_
+ from ._MotorCmd_ import MotorCmd_
+ from ._MotorState_ import MotorState_
+ from ._PressSensorState_ import PressSensorState_
+-__all__ = ["BmsCmd_", "BmsState_", "HandCmd_", "HandState_", "IMUState_", "LowCmd_", "LowState_", "MainBoardState_", "MotorCmd_", "MotorState_", "PressSensorState_", ]
++from ._LogCmd_ import LogCmd_
++__all__ = ["BmsCmd_", "BmsState_", "HandCmd_", "HandState_", "IMUState_", "LowCmd_", "LowState_", "MainBoardState_", "MotorCmd_", "MotorState_", "PressSensorState_", "LogCmd_"]

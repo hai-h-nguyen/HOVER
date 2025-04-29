@@ -62,8 +62,6 @@ from neural_wbc.isaac_lab_wrapper.neural_wbc_env import NeuralWBCEnv
 from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_h1 import NeuralWBCEnvCfgH1
 from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_h12 import NeuralWBCEnvCfgH12
 from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
-import wandb
-import wandb.util
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True

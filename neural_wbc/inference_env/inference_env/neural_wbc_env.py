@@ -96,8 +96,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
         else:
             self._joint_ids = self._joint_ids_original
 
-        self._base_name = "pelvis"
-        # self._base_name = "torso_link"
+        # self._base_name = "pelvis"
+        self._base_name = "torso_link"
         self._base_id = self._body_ids[self._base_name]
 
         self.num_actions = self._robot.num_controls
@@ -139,12 +139,12 @@ class NeuralWBCEnv(EnvironmentWrapper):
         self._d_gains = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self.device)
         for key, value in self.cfg.stiffness.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._p_gains[:, joint_id_dict[key]] = value * 0.85
-            print("[INFO]: Setting up p gains", joint_id_dict[key], key, value * 0.85)
+            self._p_gains[:, joint_id_dict[key]] = value * 0.9
+            print("[INFO]: Setting up p gains", joint_id_dict[key], key, value)
         for key, value in self.cfg.damping.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._d_gains[:, joint_id_dict[key]] = value * 1.15
-            print("[INFO]: Setting up d gains", joint_id_dict[key], key, value * 1.15)
+            self._d_gains[:, joint_id_dict[key]] = value * 1.1
+            print("[INFO]: Setting up d gains", joint_id_dict[key], key, value)
 
         self._effort_limit = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self.device)
         for key, value in self.cfg.effort_limit.items():
@@ -160,8 +160,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
         )
         for key, value in self.cfg.position_limit.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._lower_position_limit[:, joint_id_dict[key]] = value[0]
-            self._upper_position_limit[:, joint_id_dict[key]] = value[1]
+            self._lower_position_limit[:, joint_id_dict[key]] = value[0] + 0.01
+            self._upper_position_limit[:, joint_id_dict[key]] = value[1] - 0.01
             print("[INFO]: Setting position limit", joint_id_dict[key], key, value)
 
         # resolve the controller
@@ -536,9 +536,11 @@ class NeuralWBCEnv(EnvironmentWrapper):
             "state": {
                 "body_pos": current_body_state.body_pos_extend.detach().clone(),
                 "joint_pos": current_body_state.joint_pos.detach().clone(),
+                "joint_vel": current_body_state.joint_vel.detach().clone(),
                 "root_pos": current_body_state.root_pos.detach().clone(),
                 "root_rot": current_body_state.root_rot.detach().clone(),
                 "root_lin_vel": current_body_state.root_lin_vel.detach().clone(),
+                "root_ang_vel": current_body_state.root_ang_vel.detach().clone(),
             },
             "ground_truth": {
                 "body_pos": ref_motion_state.body_pos_extend.detach().clone(),
@@ -547,11 +549,14 @@ class NeuralWBCEnv(EnvironmentWrapper):
                 "root_rot": ref_motion_state.root_rot.detach().clone(),
                 "root_lin_vel": ref_motion_state.root_lin_vel.detach().clone(),
             },
-            "upper_joint_ids": self.cfg.upper_body_joint_ids,
-            "lower_joint_ids": self.cfg.lower_body_joint_ids,
+            "limits": {
             "joint_torques_limit": self._effort_limit.detach().clone(),
             "lower_pos_limit": self._lower_position_limit.detach().clone(),
             "upper_pos_limit": self._upper_position_limit.detach().clone(),
+            },
+            "action": self.actions.detach().clone(),
+            "upper_joint_ids": self.cfg.upper_body_joint_ids,
+            "lower_joint_ids": self.cfg.lower_body_joint_ids,
         }
         try:
             self.extras["data"]["process_action"] = self._processed_action.detach().clone()

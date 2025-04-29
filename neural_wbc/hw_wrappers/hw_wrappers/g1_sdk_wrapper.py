@@ -16,11 +16,13 @@
 import numpy as np
 import time
 from threading import RLock
-from typing import Any
+from typing import Any, List
+from neural_wbc.core.util import Filter
+import math
 
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher, ChannelSubscriber
-from unitree_sdk2py.idl.default import unitree_hg_msg_dds__LowCmd_, unitree_hg_msg_dds__LowState_
-from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowCmd_, LowState_
+from unitree_sdk2py.idl.default import unitree_hg_msg_dds__LowCmd_, unitree_hg_msg_dds__LowState_, unitree_hg_msg_dds__LogCmd_
+from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowCmd_, LowState_, LogCmd_
 from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
 
@@ -45,6 +47,7 @@ class G1SDKWrapper:
         """
         self.cfg = cfg
         self._low_cmd = unitree_hg_msg_dds__LowCmd_()
+        self._log_cmd = unitree_hg_msg_dds__LogCmd_()
         self._low_cmd_lock = RLock()
         self._cmd_publish_dt = self.cfg.cmd_publish_dt
 
@@ -67,8 +70,9 @@ class G1SDKWrapper:
         )
         self._cmd_publisher_thread_ptr.Start()
         print("G1 SDK Wrapper initialized.")
-        self.first_time = 1
 
+        self.first_time = 1
+        self.filter = Filter(T1=0.005, Ts=0.02, num_dofs=self.cfg.num_joints)
 
     def _cmd_publisher(self):
         """Publishes the low-level command to the SDK."""
@@ -76,6 +80,7 @@ class G1SDKWrapper:
             if not self._cmd_received:
                 return
             self._lowcmd_publisher.Write(self._low_cmd)
+            self._logcmd_publisher.Write(self._log_cmd)
 
     def _init_sdk(self):
         """Initializes the SDK for the H1 robot.
@@ -99,9 +104,14 @@ class G1SDKWrapper:
         self.lowstate_subscriber = ChannelSubscriber(self.cfg.state_channel, LowState_)
         self.lowstate_subscriber.Init(self.state_handler, self.cfg.subscriber_freq)
 
+        # Create information publisher
+        self._logcmd_publisher = ChannelPublisher(self.cfg.information_channel, LogCmd_)
+        self._logcmd_publisher.Init()
+
         print("Waiting for the robot to connect...")
-        self.wait_for_low_state()
         self.init_cmd_hg(self._low_cmd, self.mode_machine_, self.mode_pr_) # type: ignore
+        self.wait_for_low_state()
+        self.init_log_hg(self._log_cmd)
 
     def wait_for_low_state(self):
         while not self._update_mode_machine:
@@ -115,8 +125,8 @@ class G1SDKWrapper:
             cmd.motor_cmd[i].mode = 1
             cmd.motor_cmd[i].q = 0.
             cmd.motor_cmd[i].qd = 0.
-            cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
-            cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
+            cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"] * 0.5
+            cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"] * 2
             cmd.motor_cmd[i].tau = 0.        
         # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].mode = 0
         # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kp = 0.
@@ -128,6 +138,18 @@ class G1SDKWrapper:
         # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].kd = 0.
         # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.
 
+    def init_log_hg(self, logcmd: LogCmd_):
+        # logcmd.mask_mode = self.cfg.distill_mask_modes.keys()[0]
+        for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
+            logcmd.motor_cmd[i].mode = 1
+            logcmd.motor_cmd[i].q = 0.
+            logcmd.motor_cmd[i].qd = 0.
+            logcmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"] * 0.5
+            logcmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"] * 2
+            logcmd.motor_cmd[i].tau = 0.  
+
+        logcmd.motor_state = self._low_state.motor_state
+        logcmd.imu_state = self._low_state.imu_state
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -151,19 +173,34 @@ class G1SDKWrapper:
         # else:
         #     self._low_cmd.motor_cmd[0].mode = 1
 
+        # compute desired joint velocities
+        # self.desired_velocities = self.filter.dt1_filter(cmd_joint_positions)
+        # self.desired_velocities = np.clip(self.desired_velocities, -32., 32.)
+
         with self._low_cmd_lock:
             for joint_idx in range(self.cfg.num_joints):
                 motor_idx = self.cfg.JointSeq2MotorID[joint_idx]
                 self._low_cmd.motor_cmd[motor_idx].q = cmd_joint_positions[joint_idx]
+                # self._low_cmd.motor_cmd[motor_idx].dq = self.cmd_joint_velocities[joint_idx] if not math.isnan(self.cmd_joint_velocities[joint_idx]) else 0.0
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._low_cmd.motor_cmd[motor_idx].tau = 0.0            
-            for i in range(12):
-                motor_idx = self.cfg.JointSeq2MotorID[i]
-                self._low_cmd.motor_cmd[motor_idx].q = 0.0
-                self._low_cmd.motor_cmd[motor_idx].dq = 0.0
-                self._low_cmd.motor_cmd[motor_idx].tau = 0.0  
+                
+                self._log_cmd.motor_cmd[motor_idx].q = cmd_joint_positions[joint_idx]
+                self._log_cmd.motor_cmd[motor_idx].dq = 0.0
+                self._log_cmd.motor_cmd[motor_idx].tau = 0.0
+                self._log_cmd.reference_joint_pos[motor_idx] = 1.0
+                self._log_cmd.reference_joint_vel[motor_idx] = 10.0
+
+            # for i in range(12):
+            #     motor_idx = self.cfg.JointSeq2MotorID[i]
+            #     self._low_cmd.motor_cmd[motor_idx].q = 0.0
+            #     self._low_cmd.motor_cmd[motor_idx].dq = 0.0
+            #     self._low_cmd.motor_cmd[motor_idx].tau = 0.0  
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
+
+            self._log_cmd.motor_state = self._low_state.motor_state
+            self._log_cmd.imu_state = self._low_state.imu_state      
 
 
     def publish_joint_torque_cmd(self, cmd_joint_torques: np.ndarray):

@@ -24,6 +24,7 @@ from inference_env.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 from inference_env.utils import get_player_args
 
 from neural_wbc.core.evaluator import Evaluator
+from neural_wbc.core.recorder import Recorder
 from neural_wbc.data import get_data_path
 
 # add argparse arguments
@@ -57,20 +58,25 @@ def main():
         env_cfg=env_cfg,
         )
     evaluator = Evaluator(env_wrapper=player.env, metrics_path=args_cli.metrics_path)
+    recorder = Recorder(env_wrapper=player.env, log_path="/home/rtx4/HOVER/")
 
     should_stop = False
+    is_record = False
     while not should_stop:
         _, obs, dones, extras = player.play_once()
 
+        is_record = recorder.collect(dones=dones.clone(), info=extras.copy())
         reset_env = evaluator.collect(dones=dones, info=extras)
         if reset_env and not evaluator.is_evaluation_complete():
             evaluator.visualize(dt=env_cfg.dt * env_cfg.decimation)
             evaluator.forward_motion_samples()
             _ = player.reset()
-
         should_stop = evaluator.is_evaluation_complete()
 
     evaluator.conclude()
+    if is_record:
+        recorder.save()
+        print("Recording completed and saved.")
 
 
 if __name__ == "__main__":

@@ -53,10 +53,10 @@ def check_termination_conditions(
             gravity_x_threshold=gravity_x_threshold,
             gravity_y_threshold=gravity_y_threshold,
         ),
-        "undesired_contact": terminate_by_undesired_contact(
-            net_contact_forces=net_contact_forces,
-            undesired_contact_body_ids=undesired_contact_body_ids,
-        ),
+        # "undesired_contact": terminate_by_undesired_contact(
+        #     net_contact_forces=net_contact_forces,
+        #     undesired_contact_body_ids=undesired_contact_body_ids,
+        # ),
         "reference_motion_length": terminate_by_reference_motion_length(
             ref_motion_mgr=ref_motion_mgr, episode_times=episode_times
         ),

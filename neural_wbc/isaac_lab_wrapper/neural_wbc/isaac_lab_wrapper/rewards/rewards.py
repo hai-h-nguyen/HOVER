@@ -76,6 +76,7 @@ class NeuralWBCRewards:
         self,
         articulation_data: ArticulationData,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         previous_actions: torch.Tensor,
         actions: torch.Tensor,
@@ -109,6 +110,7 @@ class NeuralWBCRewards:
 
             rewards[reward_name] = reward_fn(
                 body_state=body_state,
+                previous_body_state=previous_body_state,
                 ref_motion_state=ref_motion_state,
                 articulation_data=articulation_data,
                 previous_actions=previous_actions,
@@ -125,6 +127,7 @@ class NeuralWBCRewards:
     def reward_track_joint_positions(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -137,13 +140,17 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         joint_pos = body_state.joint_pos
-        ref_joint_pos = ref_motion_state.joint_pos
+        if previous_body_state is not None:
+            ref_joint_pos = previous_body_state.joint_pos
+        else:
+            ref_joint_pos = ref_motion_state.joint_pos
         mean_joint_pos_diff_squared = torch.mean(torch.square(ref_joint_pos - joint_pos), dim=1)
         return torch.exp(-mean_joint_pos_diff_squared / self._cfg.joint_pos_sigma)
 
     def reward_track_joint_velocities(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -156,7 +163,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         joint_vel = body_state.joint_vel
-        ref_joint_vel = ref_motion_state.joint_vel
+        if previous_body_state is not None:
+            ref_joint_vel = previous_body_state.joint_vel
+        else:
+            ref_joint_vel = ref_motion_state.joint_vel
         mean_joint_vel_diff_squared = torch.mean(torch.square(ref_joint_vel - joint_vel), dim=1)
         return torch.exp(-mean_joint_vel_diff_squared / self._cfg.joint_vel_sigma)
 
@@ -183,6 +193,7 @@ class NeuralWBCRewards:
     def reward_track_body_velocities_extended(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -195,7 +206,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         body_vel_extend = body_state.body_lin_vel_extend
-        ref_body_vel_extend = ref_motion_state.body_lin_vel_extend
+        if previous_body_state is not None:
+            ref_body_vel_extend = previous_body_state.body_lin_vel_extend
+        else:
+            ref_body_vel_extend = ref_motion_state.body_lin_vel_extend
         diff_vel = ref_body_vel_extend - body_vel_extend
         mean_diff_vel_squared = (diff_vel**2).mean(dim=-1).mean(dim=-1)
         return torch.exp(-mean_diff_vel_squared / self._cfg.body_vel_sigma)
@@ -224,6 +238,7 @@ class NeuralWBCRewards:
     def reward_track_body_angular_velocities_extended(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -237,7 +252,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         body_ang_vel_extend = body_state.body_ang_vel_extend
-        ref_body_ang_vel_extend = ref_motion_state.body_ang_vel_extend
+        if previous_body_state is not None:
+            ref_body_ang_vel_extend = previous_body_state.body_ang_vel_extend
+        else:
+            ref_body_ang_vel_extend = ref_motion_state.body_ang_vel_extend
         diff_ang_vel = ref_body_ang_vel_extend - body_ang_vel_extend
         mean_diff_ang_vel_squared = (diff_ang_vel**2).mean(dim=-1).mean(dim=-1)
         return torch.exp(-mean_diff_ang_vel_squared / self._cfg.body_ang_vel_sigma)
@@ -245,6 +263,7 @@ class NeuralWBCRewards:
     def reward_track_body_position_extended(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -258,7 +277,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         body_pos_extend = body_state.body_pos_extend
-        ref_body_pos_extend = ref_motion_state.body_pos_extend
+        if previous_body_state is not None:
+            ref_body_pos_extend = previous_body_state.body_pos_extend
+        else:
+            ref_body_pos_extend = ref_motion_state.body_pos_extend
 
         diff_global_body_pos = ref_body_pos_extend - body_pos_extend
         diff_global_body_pos_lower = diff_global_body_pos[:, :11]
@@ -276,6 +298,7 @@ class NeuralWBCRewards:
     def reward_track_body_position_vr_key_points(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -289,7 +312,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         body_pos_extend = body_state.body_pos_extend
-        ref_body_pos_extend = ref_motion_state.body_pos_extend
+        if previous_body_state is not None:
+            ref_body_pos_extend = previous_body_state.body_pos_extend
+        else:
+            ref_body_pos_extend = ref_motion_state.body_pos_extend
 
         diff_global_body_pos = ref_body_pos_extend - body_pos_extend
         diff_global_body_pos_vr_key_points = diff_global_body_pos[:, -3:]
@@ -297,9 +323,12 @@ class NeuralWBCRewards:
 
         return torch.exp(-diff_body_pos_dist_vr_key_points / self._cfg.body_pos_vr_key_points_sigma)
 
-    def reward_track_body_position_feet(self, body_state: BodyState, ref_motion_state: ReferenceMotionState, **kwargs):
+    def reward_track_body_position_feet(self, body_state: BodyState, previous_body_state: BodyState, ref_motion_state: ReferenceMotionState, **kwargs):
         body_pos_extend = body_state.body_pos_extend
-        ref_body_pos_extend = ref_motion_state.body_pos_extend
+        if previous_body_state is not None:
+            ref_body_pos_extend = previous_body_state.body_pos_extend
+        else:
+            ref_body_pos_extend = ref_motion_state.body_pos_extend
 
         diff_global_body_pos = ref_body_pos_extend - body_pos_extend
         feet_diff = diff_global_body_pos[:, self._body_state_feet_ids, :]
@@ -333,6 +362,7 @@ class NeuralWBCRewards:
     def reward_track_body_rotation_extended(
         self,
         body_state: BodyState,
+        previous_body_state: BodyState,
         ref_motion_state: ReferenceMotionState,
         **kwargs,
     ) -> torch.Tensor:
@@ -345,7 +375,10 @@ class NeuralWBCRewards:
             torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
         """
         body_rot_extend = body_state.body_rot_extend
-        ref_body_rot_extend = ref_motion_state.body_rot_extend
+        if previous_body_state is not None:
+            ref_body_rot_extend = previous_body_state.body_rot_extend
+        else:
+            ref_body_rot_extend = ref_motion_state.body_rot_extend
 
         diff_global_body_rot = math_utils.quat_mul(ref_body_rot_extend, math_utils.quat_conjugate(body_rot_extend))
         diff_global_body_rot_xyzw = math_utils.convert_quat(diff_global_body_rot, to="xyzw")

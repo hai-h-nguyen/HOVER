@@ -88,6 +88,7 @@ class ReferenceMotionManager:
         random_sample: bool,
         extend_head: bool,
         dt: float,
+        load_motions: bool = True,
     ):
         """Initializes a reference motion manager that loads and queries a motion dataset.
 
@@ -98,6 +99,7 @@ class ReferenceMotionManager:
             random_sample (bool): Whether to randomly sample the dataset.
             extend_head (bool): Whether to extend the head of the body for specific robots, e.g. H1.
             dt (float): Length of a policy time step, which is the length of a physics time steps multiplied by decimation.
+            load_motions (bool): Whether to load motions immediately. Defaults to True.
         """
         self._device = device
         self._num_envs = num_envs
@@ -142,8 +144,8 @@ class ReferenceMotionManager:
         self._motion_start_times = torch.zeros(
             self._num_envs, dtype=torch.float32, device=self._device, requires_grad=False
         )
-
-        self.load_motions(random_sample=random_sample, start_idx=0)
+        if load_motions:
+            self.load_motions(random_sample=random_sample, start_idx=0)
 
     @property
     def motion_lib(self):
@@ -176,6 +178,12 @@ class ReferenceMotionManager:
     def load_motions(self, random_sample: bool, start_idx: int):
         """Loads motions from the motion dataset."""
         self._motion_lib.load_motions(random_sample=random_sample, start_idx=start_idx)
+        self._motion_len = self._motion_lib.get_motion_length(self._motion_ids)
+        self.reset_motion_start_times(env_ids=self._motion_ids, sample=False)
+        
+    def load_motions_with_ids(self, sample_idxes: torch.Tensor):
+        """Loads motions from the motion dataset with  ids."""
+        self._motion_lib.load_motions(sample_idxes=sample_idxes)
         self._motion_len = self._motion_lib.get_motion_length(self._motion_ids)
         self.reset_motion_start_times(env_ids=self._motion_ids, sample=False)
 
