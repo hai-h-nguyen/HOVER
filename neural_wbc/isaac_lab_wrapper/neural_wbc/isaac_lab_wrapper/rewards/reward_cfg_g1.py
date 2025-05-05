@@ -121,7 +121,7 @@ class NeuralWBCRewardCfg_G1_4_DeltaAction:
         "reward_track_joint_positions": 1.0,
         "reward_track_joint_velocities": 0.5,
         "penalize_action_changes": -0.5,
-        "penalize_action_norm": -0.5,
+        # "penalize_action_norm": -0.5,
         "penalize_by_joint_pos_limits": -10.0,
         "penalize_by_joint_velocity_limits": -5.0,
         "penalize_by_torque_limits": -5.0,

@@ -278,7 +278,7 @@ def main():
 
     # Create env and wrap it for RSL RL.
     env = NeuralWBCEnv(cfg=env_cfg)
-    wrapped_env = RslRlNeuralWBCVecEnvWrapper(env)
+    # wrapped_env = RslRlNeuralWBCVecEnvWrapper(env)
 
     # teacher_policy_cfg = TeacherPolicyCfg.from_argparse_args(args_cli)
     # teacher_policy = NeuralWBCTeacherPolicy(env=wrapped_env, teacher_policy_cfg=teacher_policy_cfg)
@@ -293,7 +293,25 @@ def main():
     # trainer.run()
 
     # close the simulator
-    env.close()
+    # env.close()
+    # env = NeuralWBCEnv(cfg=env_cfg)
+    env.reset()
+    # sample actions
+    joint_efforts = torch.zeros((env.num_envs, env.num_actions))
+    # simulate physics
+    num_demos = 0
+    while num_demos < 1000000 * env_cfg.scene.num_envs:
+        with torch.inference_mode():
+            # store signals
+            # -- obs
+            obs = env._get_observations()
+            # self._check_observations(env=env, obs=obs)
+            # step the environment
+            obs, _, terminated, truncated, _ = env.step(joint_efforts)
+            # print(terminated)
+            # print(truncated)
+            num_demos += len(terminated) + len(truncated)
+            # self._check_observations(env=env, obs=obs)
 
 
 if __name__ == "__main__":

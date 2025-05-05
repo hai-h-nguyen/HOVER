@@ -35,6 +35,7 @@ from isaaclab.assets import Articulation
 from isaaclab.envs import DirectRLEnv
 from isaaclab.sensors import ContactSensor, RayCaster
 from isaaclab.utils.noise import NoiseModel, NoiseModelCfg, UniformNoiseCfg
+from isaaclab.managers import SceneEntityCfg
 
 from .body_state import build_body_state
 from .rewards import NeuralWBCRewards, NeuralWBCRewardCfg_H12, NeuralWBCRewards_G1
@@ -313,6 +314,9 @@ class NeuralWBCEnv(DirectRLEnv):
                 # History with proprioceptive states and actions:
                 + self.cfg.observation_history_length * (num_proprioceptive_states + self.num_actions)
             )
+            if self.cfg.mode.is_delta_action_mode():
+                self.num_delta_action_obs = self.num_student_obs + self.num_actions
+                
 
     def _setup_scene(self):
         self._robot = Articulation(self.cfg.robot)
@@ -377,6 +381,50 @@ class NeuralWBCEnv(DirectRLEnv):
                     "joint_vel": torch.tensor(group["robot_state"]["joint_vel"][:], device=self.device),
                     }
                 self.recorded_sample[env_ids[i]] = sample
+                
+    def _get_recorded_data(self, env_ids: torch.Tensor) -> dict:
+        keys = [
+            "action",
+            "root_pos",
+            "root_lin_vel",
+            "root_ang_vel",
+            "root_rot",
+            "joint_pos",
+            "joint_vel",
+        ]
+        data = {
+                key: torch.stack(
+                    [self.recorded_sample[env_id][key][self.episode_length_buf[env_id]] for env_id in range(self.num_envs)]
+                )[env_ids]
+                for key in keys
+            }
+        return data
+    
+    def _reset_robot_state(self):
+        env_ids = torch.arange(self.num_envs).to(self.device)
+        recorded_robot_state = self._get_recorded_data(env_ids)
+        asset = self.scene[SceneEntityCfg("robot").name]
+
+        asset.write_joint_state_to_sim(recorded_robot_state["joint_pos"], recorded_robot_state["joint_vel"], self._joint_ids, env_ids=env_ids) 
+
+        root_states = asset.data.default_root_state[env_ids].clone()
+
+        root_states[:, :3] = recorded_robot_state["root_pos"] 
+        root_states[:, :2] += self._start_positions_on_terrain[env_ids, :2]  
+
+        root_states[:, 3:7] = recorded_robot_state["root_rot"]
+        root_states[:, 7:10] = recorded_robot_state["root_lin_vel"]
+        root_states[:, 10:13] = recorded_robot_state["root_ang_vel"]
+
+        state = root_states[:, :7]
+        velocity = root_states[:, 7:13]
+        asset.write_root_pose_to_sim(state, env_ids=env_ids)
+        asset.write_root_velocity_to_sim(velocity, env_ids=env_ids)
+
+        self.scene.write_data_to_sim()
+        self.sim.forward()
+        if self.sim.has_rtx_sensors() and self.cfg.rerender_on_reset:
+                self.sim.render()
 
     def _pre_physics_step(self, actions: torch.Tensor):
         # Update recovery counters
@@ -401,10 +449,10 @@ class NeuralWBCEnv(DirectRLEnv):
     def _apply_action(self):
         # We define our own control law that can update at every physics step. Therefore we put
         # this computation here.
-        self.actions_real = torch.zeros_like(self.actions)
+        self.recorded_action = torch.zeros_like(self.actions)
         if self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
-            self.actions_real = torch.cat([self.recorded_sample[env_id]["action"][self.episode_length_buf[env_id]] for env_id in range(self.num_envs)], dim=0)
-        actions_scaled = (self.actions + self.actions_real) * self.cfg.action_scale
+            self.recorded_action = self._get_recorded_data(torch.arange(self.num_envs))["action"]
+        actions_scaled = (self.actions + self.recorded_action) * self.cfg.action_scale
         self._processed_actions = self._control_fn(self, actions_scaled, joint_ids=self._joint_ids)
 
         # Adding noise to the control signal to enhance robustness. `torque_limits` is using IsaacLab
@@ -429,10 +477,6 @@ class NeuralWBCEnv(DirectRLEnv):
             extend_body_parent_ids=self.extend_body_parent_ids,
             extend_body_pos=self.extend_body_pos,
         )
-        if self.cfg.mode.is_delta_action_mode() or self.cfg.mode.is_finetune_mode():
-            self._previous_body_state = copy.deepcopy(body_state)
-        else:
-            self._previous_body_state = None
 
         ref_motion_state: ReferenceMotionState = self._ref_motion_mgr.get_state_from_motion_lib_cache(
             episode_length_buf=self.episode_length_buf,
@@ -474,11 +518,6 @@ class NeuralWBCEnv(DirectRLEnv):
         return obs_dic
 
     def _get_rewards(self) -> torch.Tensor:
-        ref_motion_state: ReferenceMotionState = self._ref_motion_mgr.get_state_from_motion_lib_cache(
-            episode_length_buf=self.episode_length_buf,
-            offset=self._start_positions_on_terrain,
-            terrain_heights=self.get_terrain_heights(),
-        )
         body_state = build_body_state(
             data=self._robot.data,
             body_ids=self._body_ids,
@@ -491,9 +530,28 @@ class NeuralWBCEnv(DirectRLEnv):
         timeout_buf = (
             self._termination_conditions["reference_motion_length"].reshape(self.num_envs) | self.reset_time_outs
         )
+        if self.cfg.mode.is_delta_action_mode():
+            self._reset_robot_state()
+            recorded_body_state = build_body_state(
+                data=self._robot.data,
+                body_ids=self._body_ids,
+                joint_ids=self._joint_ids,
+                extend_body_parent_ids=self.extend_body_parent_ids,
+                extend_body_pos=self.extend_body_pos,
+                root_id=self.cfg.root_id,
+            )
+            ref_motion_state = None
+        else:
+            recorded_body_state = None
+            ref_motion_state: ReferenceMotionState = self._ref_motion_mgr.get_state_from_motion_lib_cache(
+                episode_length_buf=self.episode_length_buf,
+                offset=self._start_positions_on_terrain,
+                terrain_heights=self.get_terrain_heights(),
+            )
+
         reward_sum, rewards = self._rewards.compute_reward(
             body_state=body_state,
-            previous_body_state=self._previous_body_state,
+            recorded_body_state=recorded_body_state,
             ref_motion_state=ref_motion_state,
             articulation_data=self._robot.data,
             previous_actions=self._previous_actions,
@@ -529,7 +587,7 @@ class NeuralWBCEnv(DirectRLEnv):
         if self.cfg.mode.is_delta_action_mode():
             self._termination_conditions = {}
             self._termination_conditions["reference_motion_length"] = self._ref_motion_mgr.episodes_exceed_motion_length(episode_times=self._get_episode_times())
-            died = torch.any(torch.cat(list(self._termination_conditions.values()), dim=1), dim=1)
+            died = list(self._termination_conditions.values())[0]
         else:
             died, self._termination_conditions = check_termination_conditions(
                 training_mode=self.cfg.mode.is_training_mode(),
@@ -569,6 +627,9 @@ class NeuralWBCEnv(DirectRLEnv):
         if self.is_resample_reference_motion_step:
             assert torch.equal(env_ids, self._robot._ALL_INDICES)
             self._ref_motion_mgr.load_motions(random_sample=True, start_idx=0)
+        
+        if self.cfg.mode.is_delta_action_mode():
+            self.episode_length_buf[env_ids] = 0
         super()._reset_idx(env_ids)
 
         # reset actions

@@ -96,7 +96,6 @@ class NeuralWBCEnv(EnvironmentWrapper):
         else:
             self._joint_ids = self._joint_ids_original
 
-        # self._base_name = "pelvis"
         self._base_name = "torso_link"
         self._base_id = self._body_ids[self._base_name]
 
@@ -318,6 +317,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
         if self.cfg.mode.is_distill_mode():
             obs_dic = self._compute_observations()
             self.history.update(obs_dic)
+            self.previous_body_state = self._compose_body_state(extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids)
 
         # Action delay process
         if self.cfg.ctrl_delay_step_range[1] > 0:
@@ -351,7 +351,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
         # reset history
         if self.cfg.mode.is_distill_mode():
             self.history.reset(env_ids=env_ids)
-
+        
+        self.previous_body_state = self._compose_body_state(extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids)
         obs = self.get_observations()
         return obs, None
 
@@ -533,6 +534,15 @@ class NeuralWBCEnv(EnvironmentWrapper):
 
         self.extras["data"] = {
             "mask": self._mask.detach().clone(),
+            "recorded_state":{
+                # "body_pos": self.previous_body_state.body_pos_extend.detach().clone(),
+                "joint_pos": self.previous_body_state.joint_pos.detach().clone(),
+                "joint_vel": self.previous_body_state.joint_vel.detach().clone(),
+                "root_pos": self.previous_body_state.root_pos.detach().clone(),
+                "root_rot": self.previous_body_state.root_rot.detach().clone(),
+                "root_lin_vel": self.previous_body_state.root_lin_vel.detach().clone(),
+                "root_ang_vel": self.previous_body_state.root_ang_vel.detach().clone(),
+            },
             "state": {
                 "body_pos": current_body_state.body_pos_extend.detach().clone(),
                 "joint_pos": current_body_state.joint_pos.detach().clone(),

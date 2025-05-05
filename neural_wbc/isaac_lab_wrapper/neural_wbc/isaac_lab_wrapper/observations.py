@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 from neural_wbc.core import ReferenceMotionState
 from neural_wbc.core.body_state import BodyState
-from neural_wbc.core.observations import compute_student_observations, compute_teacher_observations
+from neural_wbc.core.observations import compute_student_observations, compute_teacher_observations, compute_delta_action_observations
 
 
 def compute_observations(
@@ -39,28 +39,9 @@ def compute_observations(
     asset: Articulation = env.scene.articulations[asset_cfg.name]
 
     obs_dict = {}
-
-    # First collect teacher policy observations.
-    teacher_obs, teacher_obs_dict = compute_teacher_observations(
-        body_state=body_state,
-        ref_motion_state=ref_motion_state,
-        tracked_body_ids=env._tracked_body_ids,
-        ref_episodic_offset=env.ref_episodic_offset,
-        last_actions=env.actions,
-    )
-    obs_dict.update(teacher_obs_dict)
-    obs_dict["teacher_policy"] = teacher_obs
-
-    # Then the privileged observations.
-    privileged_obs, privileged_obs_dict = compute_privileged_observations(env=env, asset=asset)
-    obs_dict.update(privileged_obs_dict)
-    obs_dict["critic"] = torch.cat([teacher_obs, privileged_obs], dim=1)
-
-    # If we are in a distill mode, add student observations.
-    if env.cfg.mode.is_distill_mode() or env.cfg.mode.is_delta_action_mode() or env.cfg.mode.is_finetune_mode():
-        base_id = env._body_names.index(env.base_name)
-        student_obs, student_obs_dict = compute_student_observations(
-            base_id=base_id,
+    if env.cfg.mode.is_delta_action_mode():
+        delta_action_obs, delta_action_obs_dict = compute_delta_action_observations(
+            base_id=env._body_names.index(env.base_name),
             body_state=body_state,
             ref_motion_state=ref_motion_state,
             projected_gravity=asset.data.projected_gravity_b,
@@ -68,10 +49,49 @@ def compute_observations(
             history=env.history.entries,
             mask=env.mask,
             ref_episodic_offset=env.ref_episodic_offset,
+            recorded_actions=env._get_recorded_data(torch.arange(env.num_envs))["action"]
         )
+        obs_dict.update(delta_action_obs_dict)
+        obs_dict["delta_action_policy"] = delta_action_obs
 
-        obs_dict.update(student_obs_dict)
-        obs_dict["student_policy"] = student_obs
+        # Then the privileged observations.
+        privileged_obs, privileged_obs_dict = compute_privileged_observations(env=env, asset=asset)
+        obs_dict.update(privileged_obs_dict)
+        obs_dict["critic"] = torch.cat([delta_action_obs, privileged_obs], dim=1)
+        
+    else:
+        # First collect teacher policy observations.
+        teacher_obs, teacher_obs_dict = compute_teacher_observations(
+            body_state=body_state,
+            ref_motion_state=ref_motion_state,
+            tracked_body_ids=env._tracked_body_ids,
+            ref_episodic_offset=env.ref_episodic_offset,
+            last_actions=env.actions,
+        )
+        obs_dict.update(teacher_obs_dict)
+        obs_dict["teacher_policy"] = teacher_obs
+
+        # Then the privileged observations.
+        privileged_obs, privileged_obs_dict = compute_privileged_observations(env=env, asset=asset)
+        obs_dict.update(privileged_obs_dict)
+        obs_dict["critic"] = torch.cat([teacher_obs, privileged_obs], dim=1)
+
+        # If we are in a distill mode, add student observations.
+        if env.cfg.mode.is_distill_mode() or env.cfg.mode.is_delta_action_mode() or env.cfg.mode.is_finetune_mode():
+            base_id = env._body_names.index(env.base_name)
+            student_obs, student_obs_dict = compute_student_observations(
+                base_id=base_id,
+                body_state=body_state,
+                ref_motion_state=ref_motion_state,
+                projected_gravity=asset.data.projected_gravity_b,
+                last_actions=env.actions,
+                history=env.history.entries,
+                mask=env.mask,
+                ref_episodic_offset=env.ref_episodic_offset,
+            )
+
+            obs_dict.update(student_obs_dict)
+            obs_dict["student_policy"] = student_obs
 
     return obs_dict
 

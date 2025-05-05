@@ -64,12 +64,12 @@ class Recorder:
             self.frames = self.initialize_frame(self._ref_motion_mgr.motion_lib._curr_motion_ids.item(), self._ref_motion_frames)
         if self.frames["mask"] is None:
             self.frames["mask"] = info["data"]["mask"].cpu().numpy()
-        self.frames["robot_state"]["root_pos"][self._curr_steps, :] = info["data"]["state"]["root_pos"].cpu().numpy()
-        self.frames["robot_state"]["root_lin_vel"][self._curr_steps, :] = info["data"]["state"]["root_lin_vel"].cpu().numpy()
-        self.frames["robot_state"]["root_ang_vel"][self._curr_steps, :] = info["data"]["state"]["root_ang_vel"].cpu().numpy()
-        self.frames["robot_state"]["root_rot"][self._curr_steps, :] = info["data"]["state"]["root_rot"].cpu().numpy()
-        self.frames["robot_state"]["joint_pos"][self._curr_steps, :] = info["data"]["state"]["joint_pos"].cpu().numpy()
-        self.frames["robot_state"]["joint_vel"][self._curr_steps, :] = info["data"]["state"]["joint_vel"].cpu().numpy()      
+        self.frames["robot_state"]["root_pos"][self._curr_steps, :] = info["data"]["recorded_state"]["root_pos"].cpu().numpy()
+        self.frames["robot_state"]["root_lin_vel"][self._curr_steps, :] = info["data"]["recorded_state"]["root_lin_vel"].cpu().numpy()
+        self.frames["robot_state"]["root_ang_vel"][self._curr_steps, :] = info["data"]["recorded_state"]["root_ang_vel"].cpu().numpy()
+        self.frames["robot_state"]["root_rot"][self._curr_steps, :] = info["data"]["recorded_state"]["root_rot"].cpu().numpy()
+        self.frames["robot_state"]["joint_pos"][self._curr_steps, :] = info["data"]["recorded_state"]["joint_pos"].cpu().numpy()
+        self.frames["robot_state"]["joint_vel"][self._curr_steps, :] = info["data"]["recorded_state"]["joint_vel"].cpu().numpy()      
         self.frames["action"][self._curr_steps, :] = info["data"]["action"].cpu().numpy()
         self._curr_steps += 1
 
@@ -82,7 +82,7 @@ class Recorder:
             self.frames["robot_state"]["joint_pos"] = self.frames["robot_state"]["joint_pos"][:self._curr_steps, :]
             self.frames["robot_state"]["joint_vel"] = self.frames["robot_state"]["joint_vel"][:self._curr_steps, :]
             self.frames["action"] = self.frames["action"][:self._curr_steps, :]
-            self.frames["step"] = self._curr_steps
+            self.frames["step"] = self._curr_steps - 1
 
             self._recorded_frames_total.append(self.frames)
             self._curr_steps = 0

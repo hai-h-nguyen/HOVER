@@ -321,7 +321,10 @@ def reset_robot_state_and_motion(
     mdp.reset_joints_by_scale(env, env_ids, (1.0, 1.0), (0.0, 0.0), asset_cfg)
 
     # Sample new commands
-    env._ref_motion_mgr.reset_motion_start_times(env_ids=env_ids, sample=env.cfg.mode.is_training_mode())
+    if env.cfg.mode.is_delta_action_mode():
+        env._ref_motion_mgr.reset_motion_start_times(env_ids=env_ids, sample=False)
+    else:
+        env._ref_motion_mgr.reset_motion_start_times(env_ids=env_ids, sample=env.cfg.mode.is_training_mode())
 
     # Record new start locations on terrain
     env._start_positions_on_terrain[env_ids, ...] = root_states[:, :3]
@@ -334,18 +337,32 @@ def reset_robot_state_and_motion(
 
     env._ref_motion_visualizer.visualize(ref_motion_state)
 
-    joint_pos = ref_motion_state.joint_pos[env_ids]
-    joint_vel = ref_motion_state.joint_vel[env_ids]
-    asset.write_joint_state_to_sim(joint_pos, joint_vel, env._joint_ids, env_ids=env_ids)
+    if env.cfg.mode.is_delta_action_mode():
+        recorded_sample = env._get_recorded_data(env_ids)
+        joint_pos = recorded_sample["joint_pos"]
+        joint_vel = recorded_sample["joint_vel"]
+        asset.write_joint_state_to_sim(joint_pos, joint_vel, env._joint_ids, env_ids=env_ids)
 
-    root_states = asset.data.default_root_state[env_ids].clone()
+        root_states = asset.data.default_root_state[env_ids].clone()
 
-    root_states[:, :3] = ref_motion_state.root_pos[env_ids]
-    root_states[:, 2] += 0.04  # in case under the terrain
+        root_states[:, :3] = recorded_sample["root_pos"]
+        root_states[:, :2] += env._start_positions_on_terrain[env_ids, :2]
+        root_states[:, 3:7] = recorded_sample["root_rot"]
+        root_states[:, 7:10] = recorded_sample["root_lin_vel"]
+        root_states[:, 10:13] = recorded_sample["root_ang_vel"]
+    else:
+        joint_pos = ref_motion_state.joint_pos[env_ids]
+        joint_vel = ref_motion_state.joint_vel[env_ids]
+        asset.write_joint_state_to_sim(joint_pos, joint_vel, env._joint_ids, env_ids=env_ids)
 
-    root_states[:, 3:7] = ref_motion_state.root_rot[env_ids]
-    root_states[:, 7:10] = ref_motion_state.root_lin_vel[env_ids]
-    root_states[:, 10:13] = ref_motion_state.root_ang_vel[env_ids]
+        root_states = asset.data.default_root_state[env_ids].clone()
+
+        root_states[:, :3] = ref_motion_state.root_pos[env_ids]
+        root_states[:, 2] += 0.04  # in case under the terrain
+
+        root_states[:, 3:7] = ref_motion_state.root_rot[env_ids]
+        root_states[:, 7:10] = ref_motion_state.root_lin_vel[env_ids]
+        root_states[:, 10:13] = ref_motion_state.root_ang_vel[env_ids]
 
     state = root_states[:, :7]
     velocities = root_states[:, 7:13]

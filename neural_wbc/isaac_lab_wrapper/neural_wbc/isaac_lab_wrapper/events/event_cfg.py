@@ -118,17 +118,17 @@ class NeuralWBCTrainEventCfg(NeuralWBCEventCfg):
         },
     )
     
-    # reset_robot_joint_friction_and_armature = EventTerm(
-    #     func=mdp.randomize_joint_parameters,
-    #     mode="startup",
-    #     params={
-    #         "asset_cfg": SceneEntityCfg("robot"),
-    #         "friction_distribution_params": (0.75 * 1e-2, 1.25 * 1e-2),
-    #         "armature_distribution_params": (0.75 * 1e-2, 1.25 * 1e-2),
-    #         "operation": "abs",
-    #         "distribution": "uniform",
-    #     },
-    # )
+    reset_robot_joint_friction_and_armature = EventTerm(
+        func=mdp.randomize_joint_parameters,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "friction_distribution_params": (0.75 * 1e-2, 1.25 * 1e-2),
+            "armature_distribution_params": (0.75 * 1e-2, 1.25 * 1e-2),
+            "operation": "abs",
+            "distribution": "uniform",
+        },
+    )
 
     # -- internal states
     cache_body_mass_scale = EventTerm(
