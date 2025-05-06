@@ -150,6 +150,10 @@ class RslRlNeuralWBCVecEnvWrapper(EnvironmentWrapper):
     def get_teacher_observations(self) -> torch.Tensor:
         """Returns the current observations of the environment."""
         return self.get_full_observations()["teacher_policy"]
+    
+    def get_delta_action_observations(self) -> torch.Tensor:
+        """Returns the current observations of the environment."""
+        return self.get_full_observations()["delta_action_policy"]
 
     def get_privileged_observations(self) -> torch.Tensor:
         """Returns the current observations of the environment."""
@@ -185,6 +189,8 @@ class RslRlNeuralWBCVecEnvWrapper(EnvironmentWrapper):
         # return observations
         if self._mode.is_distill_mode():
             return obs_dict["student_policy"], torch.tensor([])
+        elif self._mode.is_delta_action_mode():
+            return obs_dict["delta_action_policy"], obs_dict["critic"]
         return obs_dict["teacher_policy"], obs_dict["critic"]
 
     def step(self, actions: torch.Tensor):
@@ -193,7 +199,12 @@ class RslRlNeuralWBCVecEnvWrapper(EnvironmentWrapper):
         # compute dones for compatibility with RSL-RL
         dones = (terminated | truncated).to(dtype=torch.long)
         # move extra observations to the extras dict
-        obs = obs_dict["student_policy"] if self._mode.is_distill_mode() else obs_dict["teacher_policy"]
+        if self._mode.is_distill_mode():
+            obs = obs_dict["student_policy"]
+        elif self._mode.is_delta_action_mode():
+            obs = obs_dict["delta_action_policy"]
+        else:
+            obs = obs_dict["teacher_policy"]
         privileged_obs = obs_dict["critic"]
         extras["observations"] = obs_dict
         # move time out information to the extras dict

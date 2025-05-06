@@ -456,7 +456,7 @@ class NeuralWBCRewards:
         # Penalize changes in actions
         return torch.sum(torch.square(previous_actions - actions), dim=1)
         
-    def penalize_actrion_norm(self, actions: torch.Tensor, **kwargs):
+    def penalize_action_norm(self, actions: torch.Tensor, **kwargs):
         return torch.exp(-torch.norm(actions, dim=1) - 1)
 
     def penalize_lower_body_action_changes(

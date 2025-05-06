@@ -52,7 +52,7 @@ class AlgorithmCfg:
     entropy_coef: float = field(default=0.005, metadata={"description": "Coefficient for entropy regularization."})
     num_learning_epochs: int = field(default=5, metadata={"description": "Number of learning epochs per update."})
     num_mini_batches: int = field(default=4, metadata={"description": "Number of mini-batches per epoch."})
-    learning_rate: float = field(default=1.0e-3, metadata={"description": "Learning rate for the optimizer."})
+    learning_rate: float = field(default=1.0e-4, metadata={"description": "Learning rate for the optimizer."})
     schedule: str = field(default="adaptive", metadata={"description": "Learning rate schedule type."})
     gamma: float = field(default=0.99, metadata={"description": "Discount factor for rewards."})
     lam: float = field(default=0.95, metadata={"description": "Lambda for Generalized Advantage Estimation."})

@@ -392,12 +392,15 @@ class NeuralWBCEnv(DirectRLEnv):
             "joint_pos",
             "joint_vel",
         ]
-        data = {
-                key: torch.stack(
-                    [self.recorded_sample[env_id][key][self.episode_length_buf[env_id]] for env_id in range(self.num_envs)]
-                )[env_ids]
-                for key in keys
-            }
+        try:
+            data = {
+                    key: torch.stack(
+                        [self.recorded_sample[env_id][key][self.episode_length_buf[env_id]] for env_id in range(self.num_envs)]
+                    )[env_ids]
+                    for key in keys
+                }
+        except:
+            import ipdb; ipdb.set_trace()
         return data
     
     def _reset_robot_state(self):
@@ -626,7 +629,12 @@ class NeuralWBCEnv(DirectRLEnv):
 
         if self.is_resample_reference_motion_step:
             assert torch.equal(env_ids, self._robot._ALL_INDICES)
-            self._ref_motion_mgr.load_motions(random_sample=True, start_idx=0)
+            if self.cfg.mode.is_delta_action_mode():
+                self._sample_recorded_data(recorded_path=self.cfg.recorded_data_path, env_ids=env_ids)
+                motion_sample_ids = torch.tensor([p["ref_motion_id"] for p in self.recorded_sample]).to(self.device)
+                self._ref_motion_mgr.load_motions_with_ids(sample_idxes=motion_sample_ids)
+            else:
+                self._ref_motion_mgr.load_motions(random_sample=True, start_idx=0)
         
         if self.cfg.mode.is_delta_action_mode():
             self.episode_length_buf[env_ids] = 0

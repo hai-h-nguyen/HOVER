@@ -185,8 +185,8 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # General parameters:
     action_space = 23
     observation_space = 1073
-    # state_space = 1209
-    state_space = 1163
+    state_space = 1209
+    # state_space = 1163
 
     # Distillation parameters:
     single_history_dim = 75
@@ -439,20 +439,17 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                 if len(region_modes) == 1:
                     self.reset_mask = False
         elif self.mode == NeuralWBCModes.DELTA_ACTION:
+            self.observation_space = 2141
+            self.state_space = 2277
+            # state_space = 1163
+            self.terrain = flat_terrain
             self.max_ref_motion_dist = 0.5
             self.events = NeuralWBCTrainEventCfg()
             self.events.reset_robot_rigid_body_mass.params["asset_cfg"].body_names = self.mass_randomized_body_names
             self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
             self.add_policy_obs_noise = False
-            self.reset_mask = True
-            self.resample_motions = False
-            # Do not reset mask when there is only one mode.
-            num_regions = len(self.distill_mask_modes)
-            if num_regions == 1:
-                region_modes = list(self.distill_mask_modes.values())[0]
-                if len(region_modes) == 1:
-                    self.reset_mask = False
-                    
+            self.reset_mask = False
+            self.resample_motions_for_envs_interval_s = 100 
             self.rewards = NeuralWBCRewardCfg_G1_4_DeltaAction()
             self.recorded_data_path = "/home/rtx4/HOVER/test.h5"
 
