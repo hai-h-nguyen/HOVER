@@ -3,19 +3,19 @@
 
   <default>
     <default class="torso_motor">
-      <joint armature="0.1" frictionloss="0.2"/>
+      <joint limited="true" armature="0.1" frictionloss="0.1"/>
     </default>
     <default class="leg_motor">
-      <joint armature="0.1" frictionloss="0.2"/>
+      <joint limited="true" armature="0.1" frictionloss="0.1"/>
     </default>
     <default class="ankle_motor">
-      <joint armature="0.1" frictionloss="0.2"/>
+      <joint limited="true" armature="0.1" frictionloss="0.1"/>
     </default>r
     <default class="arm_motor">
-      <joint armature="0.1" frictionloss="0.2"/>
+      <joint limited="true" armature="0.1" frictionloss="0.1"/>
     </default>
     <default class="wrist_motor">
-      <joint armature="0.1" frictionloss="0.1"/>
+      <joint limited="true" armature="0.1" frictionloss="0.1"/>
     </default>
     
   </default>

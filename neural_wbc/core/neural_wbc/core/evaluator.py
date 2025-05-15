@@ -27,6 +27,7 @@ from neural_wbc.core.util import Filter
 from neural_wbc.core import EnvironmentWrapper, math_utils
 import math
 from matplotlib import pyplot as plt
+import gc
 
 @dataclass
 class Frame:
@@ -477,7 +478,14 @@ class MotionTrackingMetrics:
             for key, value in self._success_metrics_masked_by_episode.items()
         }
 
+    def print(self):
         """Prints current metrics."""
+        print(f"Number of reference motions: {self.num_motions}")
+        print(f"Success Rate: {self.success_rate:.10f}")
+        print("All: ", " \t\t".join([f"{k}: {v:.3f}" for k, v in self.all_metrics.items()]))
+        print("Succ: ", " \t\t".join([f"{k}: {v:.3f}" for k, v in self.success_metrics.items()]))
+        print("All Masked: ", " \t".join([f"{k}: {v:.3f}" for k, v in self.all_metrics_masked.items()]))
+        print("Succ Masked: ", " \t".join([f"{k}: {v:.3f}" for k, v in self.success_metrics_masked.items()]))
 
     def save(self, directory: str):
         """Saves metrics to a time-stamped json file in ``directory``.
@@ -544,6 +552,7 @@ class Evaluator:
         self.joint_filter = None
         self._joint_vel = None
         self.filter = Filter(T1=0.005, Ts=0.02, num_dofs=23)
+        self.counter = 0
 
     def collect(self, dones: torch.Tensor, info: dict) -> bool:
         """Collects data from a step and updates internal states.
@@ -568,6 +577,9 @@ class Evaluator:
         if self._terminated.sum() == self._num_envs:
             self._aggregate_data()
             self._num_episodes += self._num_envs
+            self.counter += 1
+            gc.collect()
+            torch.cuda.empty_cache()
             return True
 
         return False
@@ -593,11 +605,13 @@ class Evaluator:
 
         self.upper_body_joint_ids = info["data"]["upper_joint_ids"]
         self.lower_body_joint_ids = info["data"]["lower_joint_ids"]
-        
-        if self.joint_filter is None:
-            self.joint_filter = self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[np.newaxis, ...]
-        else:
-            self.joint_filter = np.concatenate([self.joint_filter, self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[np.newaxis, ...]], axis=0)
+        try:
+            if self.joint_filter is None:
+                self.joint_filter = self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[np.newaxis, ...]
+            else:
+                self.joint_filter = np.concatenate([self.joint_filter, self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[np.newaxis, ...]], axis=0)
+        except:
+            pass
 
         frame = self._build_frame(state_data, 
                                   body_mask_expanded, 
@@ -619,18 +633,20 @@ class Evaluator:
                 self._process_action = info["data"]["process_action"]
             else:
                 self._process_action = torch.cat((self._process_action, info["data"]["process_action"]), dim=0)
-        
-        if "joint_torques_limit" in info["data"]["limits"].keys():
-            self._torques_limit = info["data"]["limits"]["joint_torques_limit"]
-        if "lower_pos_limit" in info["data"]["limits"].keys():
-            self._lower_pos_limit = info["data"]["limits"]["lower_pos_limit"]
-        if "upper_pos_limit" in info["data"]["limits"].keys():
-            self._upper_pos_limit = info["data"]["limits"]["upper_pos_limit"]
+        try:
+            if "joint_torques_limit" in info["data"]["limits"].keys():
+                self._torques_limit = info["data"]["limits"]["joint_torques_limit"]
+            if "lower_pos_limit" in info["data"]["limits"].keys():
+                self._lower_pos_limit = info["data"]["limits"]["lower_pos_limit"]
+            if "upper_pos_limit" in info["data"]["limits"].keys():
+                self._upper_pos_limit = info["data"]["limits"]["upper_pos_limit"]
 
-        if self._joint_vel is None:
-            self._joint_vel = state_data.pop("joint_vel")
-        else:
-            self._joint_vel = torch.cat((self._joint_vel, state_data.pop("joint_vel")), dim=0)
+            if self._joint_vel is None:
+                self._joint_vel = state_data.pop("joint_vel")
+            else:
+                self._joint_vel = torch.cat((self._joint_vel, state_data.pop("joint_vel")), dim=0)
+        except:
+            pass 
 
     
     def visualize(self, dt):
@@ -744,15 +760,6 @@ class Evaluator:
         new_data["root_rot"] = data["root_rot"]
         return Frame.from_dict(new_data)
     
-
-    body_pos: torch.Tensor = torch.tensor([])  # [num_links, 3]
-    body_pos_masked: torch.Tensor | None = None  # [num_links, 3]
-    upper_body_joint_pos: torch.Tensor = torch.tensor([])  # [num_joints, 3]
-    lower_body_joint_pos: torch.Tensor = torch.tensor([])  # [num_joints, 3]
-    root_pos: torch.Tensor = torch.tensor([])  # [3]
-    root_lin_vel: torch.Tensor = torch.tensor([])  # [3]
-    root_rot: torch.Tensor = torch.tensor([])  # [4]
-
     def _update_failure_metrics(self, newly_terminated: torch.Tensor, info: dict):
         """Updates failure metrics based on termination conditions."""
         start_id = self._ref_motion_start_id
@@ -786,6 +793,8 @@ class Evaluator:
         start_id = self._ref_motion_start_id
         end_id = min(start_id + self._num_envs, self._num_unique_ref_motions)
         success_ids = torch.nonzero(~self._failed[start_id:end_id]).flatten().tolist()
+        # np.save(f"success_ids_{self.counter}.npy", [success_id + start_id for success_id in success_ids])
+        # print(f"Saved file: success_ids_{self.counter}.npy")
 
         # Update metrics
         self._metrics.update(
@@ -827,6 +836,7 @@ class Evaluator:
         """Concludes evaluation by computing, printing and optionally saving metrics."""
         self._pbar.close()
         self._metrics.conclude()
+        self._metrics.print()
         if self._metrics_path:
             self._metrics.save(self._metrics_path)
 

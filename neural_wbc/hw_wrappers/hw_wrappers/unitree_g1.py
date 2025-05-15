@@ -61,6 +61,7 @@ class UnitreeG1(Robot):
 
         self.joint_pos_offset = self._kinematic_model.joint_pos_offset
         self.joint_vel_offset = self._kinematic_model.joint_vel_offset
+        self.qpos_at_first_step = None
 
     def _resolve_command_fn(
         self,
@@ -97,8 +98,10 @@ class UnitreeG1(Robot):
         self._joint_velocities = (
             torch.from_numpy(self._g1_sdk.joint_velocities).unsqueeze(0).to(dtype=torch.float32, device=self.device)
         )
-
-        qpos = torch.hstack((self._root_position, self._root_rotation, self._joint_positions))
+        if self.qpos_at_first_step is not None:
+            qpos = torch.hstack((self.qpos_at_first_step, self._joint_positions))
+        else:
+            qpos = torch.hstack((self._root_position, self._root_rotation, self._joint_positions))
         qvel = torch.hstack((self._root_ang_vel, self._root_lin_vel, self._joint_velocities))
 
         self._kinematic_model.reset(qpos, qvel)
@@ -121,6 +124,9 @@ class UnitreeG1(Robot):
 
         joint_positions = qpos[..., self._kinematic_model.joint_pos_offset :]
         joint_positions_np = joint_positions.cpu().numpy()
+
+        self.qpos_at_first_step =  qpos[..., :self._kinematic_model.joint_pos_offset].clone()
+        self.qpos_at_first_step[:, 2] = 0.82
 
         # Reset robot pose
         self._g1_sdk.reset(joint_positions_np)
@@ -203,7 +209,6 @@ class UnitreeG1(Robot):
         """
         # Get torso orientation in quaternion [w, x, y, z]
         torso_orientation_quat = self._g1_sdk.torso_orientation
-        # import ipdb; ipdb.set_trace()
         # Create rotation matrix from quaternion
         torso_rot_mat_np = R.from_quat(torso_orientation_quat, scalar_first=True).as_matrix()
         torso_rot_mat = torch.tensor(torso_rot_mat_np, device=self.device, dtype=torch.float32)

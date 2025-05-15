@@ -21,10 +21,16 @@ from neural_wbc.core.util import Filter
 import math
 
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize, ChannelPublisher, ChannelSubscriber
-from unitree_sdk2py.idl.default import unitree_hg_msg_dds__LowCmd_, unitree_hg_msg_dds__LowState_, unitree_hg_msg_dds__LogCmd_
+from unitree_sdk2py.idl.default import unitree_hg_msg_dds__LowCmd_, unitree_hg_msg_dds__LowState_, unitree_hg_msg_dds__LogCmd_, geometry_msgs_msg_dds__ListTransformStamped_, geometry_msgs_msg_dds__TransformStamped_
 from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowCmd_, LowState_, LogCmd_
+from unitree_sdk2py.idl.geometry_msgs.msg.dds_ import ListTransformStamped_, TransformStamped_
 from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
+# import time
+from datetime import datetime
+# from tf2_msgs.msg import TFMessage
+# from geometry_msgs.msg import TransformStamped
+import xml.etree.ElementTree as ET
 
 WAIST_PITCH_MOTOR_ID = 14 
 WAIST_ROLL_MOTOR_ID = 13
@@ -33,6 +39,84 @@ class MotorMode:
     PR = 0  # Series Control for Pitch/Roll Joints
     AB = 1  # Parallel Control for A/B Joints
 
+def axis_angle_to_quaternion(axis_angle):
+    """Convert axis-angle representation to quaternion."""
+    # Handle zero rotation case
+    angle = np.linalg.norm(axis_angle)
+    if angle < 1e-6:
+        return {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0}
+
+    # Normalize axis
+    axis = axis_angle / angle
+
+    # Calculate quaternion components
+    half_angle = angle / 2.0
+    sin_half = np.sin(half_angle)
+    cos_half = np.cos(half_angle)
+
+    return {
+        "x": float(axis[0] * sin_half),
+        "y": float(axis[1] * sin_half),
+        "z": float(axis[2] * sin_half),
+        "w": float(cos_half),
+    }
+
+def parse_frame_map(file_path):
+    tree = ET.parse(file_path)
+    frame_map = {}
+
+    for i in tree.findall("joint"):
+        current_joint = i.attrib["name"]
+
+        parent = i.find("parent")
+        parent_joint = parent.attrib["link"]
+
+        child = i.find("child")
+        child_joint = child.attrib["link"]
+
+        trans = {"x": 0, "y": 0, "z": 0}
+        origin = i.find("origin")
+        if origin is not None:
+            trans_data = origin.attrib["xyz"].split()
+            trans = {
+                "x": float(trans_data[0]),
+                "y": float(trans_data[1]),
+                "z": float(trans_data[2]),
+            }
+
+        frame_map[current_joint] = {
+            "parent": parent_joint,
+            "child": child_joint,
+            "translation": trans,
+        }
+
+    return frame_map
+
+
+G1_DOF_AXIS = np.array([[0, 1, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                        [0, 1, 0],
+                        [0, 1, 0],
+                        [1, 0, 0],
+                        [0, 1, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                        [0, 1, 0],
+                        [0, 1, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                        [1, 0, 0],
+                        [0, 1, 0],
+                        [0, 1, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                        [0, 1, 0],
+                        [0, 1, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                        [0, 1, 0],
+                        ])
 class G1SDKWrapper:
     """This provides interface for unitree h1 robot."""
 
@@ -46,8 +130,11 @@ class G1SDKWrapper:
             cfg (Any): The configuration object.
         """
         self.cfg = cfg
+        self.frame_map = parse_frame_map(self.cfg.model_urdf_path)
         self._low_cmd = unitree_hg_msg_dds__LowCmd_()
         self._log_cmd = unitree_hg_msg_dds__LogCmd_()
+        self._transform_cmd = geometry_msgs_msg_dds__TransformStamped_()
+        self._list_transform_cmd = geometry_msgs_msg_dds__ListTransformStamped_()
         self._low_cmd_lock = RLock()
         self._cmd_publish_dt = self.cfg.cmd_publish_dt
 
@@ -73,6 +160,10 @@ class G1SDKWrapper:
 
         self.first_time = 1
         self.filter = Filter(T1=0.005, Ts=0.02, num_dofs=self.cfg.num_joints)
+        self.reference_joint_pos = [0.0] * self.cfg.num_joints
+        self.reference_joint_vel = [0.0] * self.cfg.num_joints
+        self.reference_root_pos = [0.0] * 3
+        self.reference_root_rot = [0.0] * 4
 
     def _cmd_publisher(self):
         """Publishes the low-level command to the SDK."""
@@ -81,6 +172,7 @@ class G1SDKWrapper:
                 return
             self._lowcmd_publisher.Write(self._low_cmd)
             self._logcmd_publisher.Write(self._log_cmd)
+            self._listtransformcmd_publisher.Write(self._list_transform_cmd)
 
     def _init_sdk(self):
         """Initializes the SDK for the H1 robot.
@@ -108,10 +200,15 @@ class G1SDKWrapper:
         self._logcmd_publisher = ChannelPublisher(self.cfg.information_channel, LogCmd_)
         self._logcmd_publisher.Init()
 
+        # Create visualizer reference motion publisher
+        self._listtransformcmd_publisher = ChannelPublisher(self.cfg.vis_ref_motion_channel, ListTransformStamped_)
+        self._listtransformcmd_publisher.Init()
+
         print("Waiting for the robot to connect...")
         self.init_cmd_hg(self._low_cmd, self.mode_machine_, self.mode_pr_) # type: ignore
         self.wait_for_low_state()
         self.init_log_hg(self._log_cmd)
+        self.init_list_tf_cmd(self._list_transform_cmd, self._transform_cmd)
 
     def wait_for_low_state(self):
         while not self._update_mode_machine:
@@ -126,7 +223,7 @@ class G1SDKWrapper:
             cmd.motor_cmd[i].q = 0.
             cmd.motor_cmd[i].qd = 0.
             cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"] * 0.5
-            cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"] * 2
+            cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"] * 1.5
             cmd.motor_cmd[i].tau = 0.        
         # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].mode = 0
         # cmd.motor_cmd[WAIST_PITCH_MOTOR_ID].kp = 0.
@@ -139,17 +236,62 @@ class G1SDKWrapper:
         # cmd.motor_cmd[WAIST_ROLL_MOTOR_ID].tau = 0.
 
     def init_log_hg(self, logcmd: LogCmd_):
-        # logcmd.mask_mode = self.cfg.distill_mask_modes.keys()[0]
         for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
             logcmd.motor_cmd[i].mode = 1
             logcmd.motor_cmd[i].q = 0.
             logcmd.motor_cmd[i].qd = 0.
             logcmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"] * 0.5
-            logcmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"] * 2
+            logcmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"] * 1.5
             logcmd.motor_cmd[i].tau = 0.  
 
         logcmd.motor_state = self._low_state.motor_state
         logcmd.imu_state = self._low_state.imu_state
+
+    def init_list_tf_cmd(self, _list_transform_cmd: ListTransformStamped_, _transform_cmd: TransformStamped_):
+        axis_angle = list(self.cfg.robot_init_state["joint_pos"].values())
+        time = datetime.now().timestamp()
+        time_sec = int(time // 1_000_000_000)
+        time_nano = int(time % 1_000_000_000)
+        for joint_idx in range(len(self.cfg.joint_names)):
+            axis_angle_2_euler = G1_DOF_AXIS[joint_idx] * axis_angle[joint_idx]
+            quat_angle = axis_angle_to_quaternion(axis_angle_2_euler)
+
+            joint_name = self.cfg.joint_names[joint_idx]
+            joint_info = self.frame_map.get(joint_name, None)
+            if not joint_info:
+                print(joint_name)   
+                continue
+            parent_frame_id = joint_info["parent"]
+            child_frame_id = joint_info["child"]
+            translation = joint_info["translation"]
+
+            _transform_cmd.header.stamp.sec = time_sec
+            _transform_cmd.header.stamp.nanosec = time_nano
+            _transform_cmd.header.frame_id = parent_frame_id
+            _transform_cmd.child = child_frame_id
+            _transform_cmd.transform.position.x = translation["x"]
+            _transform_cmd.transform.position.y = translation["y"]
+            _transform_cmd.transform.position.z = translation["z"]
+            _transform_cmd.transform.orientation.x = quat_angle["x"]
+            _transform_cmd.transform.orientation.y = quat_angle["y"]
+            _transform_cmd.transform.orientation.z = quat_angle["z"]
+            _transform_cmd.transform.orientation.w = quat_angle["w"]
+            _list_transform_cmd.data[joint_idx] = _transform_cmd
+        # _transform_cmd = geometry_msgs_msg_dds__TransformStampetime
+        _transform_cmd.header.stamp.sec = time_sec
+        _transform_cmd.header.stamp.nanosec = time_nano
+        _transform_cmd.header.frame_id = "world"
+        _transform_cmd.child = "pelvis"
+        _transform_cmd.transform.position.x = self.cfg.robot_init_state["base_pos"][0]
+        _transform_cmd.transform.position.y = self.cfg.robot_init_state["base_pos"][1]
+        _transform_cmd.transform.position.z = self.cfg.robot_init_state["base_pos"][2]
+        _transform_cmd.transform.orientation.x = self.cfg.robot_init_state["base_quat"][0]
+        _transform_cmd.transform.orientation.y = self.cfg.robot_init_state["base_quat"][1]
+        _transform_cmd.transform.orientation.z = self.cfg.robot_init_state["base_quat"][2]
+        _transform_cmd.transform.orientation.w = self.cfg.robot_init_state["base_quat"][3]
+        _list_transform_cmd.data[-1] = _transform_cmd
+        # print(_list_transform_cmd)
+        # exit()
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -188,19 +330,64 @@ class G1SDKWrapper:
                 self._log_cmd.motor_cmd[motor_idx].q = cmd_joint_positions[joint_idx]
                 self._log_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._log_cmd.motor_cmd[motor_idx].tau = 0.0
-                self._log_cmd.reference_joint_pos[motor_idx] = 1.0
-                self._log_cmd.reference_joint_vel[motor_idx] = 10.0
+                self._log_cmd.reference_joint_pos[motor_idx] = self.reference_joint_pos[joint_idx]
+                self._log_cmd.reference_joint_vel[motor_idx] = self.reference_joint_vel[joint_idx]
+
+            self._log_cmd.motor_state = self._low_state.motor_state
+            self._log_cmd.imu_state = self._low_state.imu_state
 
             # for i in range(12):
             #     motor_idx = self.cfg.JointSeq2MotorID[i]
             #     self._low_cmd.motor_cmd[motor_idx].q = 0.0
             #     self._low_cmd.motor_cmd[motor_idx].dq = 0.0
-            #     self._low_cmd.motor_cmd[motor_idx].tau = 0.0  
+            #     self._low_cmd.motor_cmd[motor_idx].tau = 0.0
+            time = datetime.now().timestamp()  
+            time_sec = int(time // 1_000_000_000)
+            time_nano = int(time % 1_000_000_000)
+            for joint_idx in range(len(self.cfg.joint_names)):
+                axis_angle = self.reference_joint_pos[joint_idx]
+                axis_angle_2_euler = G1_DOF_AXIS[joint_idx] * axis_angle
+                quat_angle = axis_angle_to_quaternion(axis_angle_2_euler)
+
+                joint_name = self.cfg.joint_names[joint_idx]
+                joint_info = self.frame_map.get(joint_name, None)
+                if not joint_info:
+                    continue
+                parent_frame_id = joint_info["parent"]
+                child_frame_id = joint_info["child"]
+                translation = joint_info["translation"]
+
+                self._transform_cmd.header.stamp.sec = time_sec
+                self._transform_cmd.header.stamp.nanosec = time_nano
+                self._transform_cmd.header.frame_id = parent_frame_id
+                self._transform_cmd.child = child_frame_id
+                self._transform_cmd.transform.position.x = translation["x"]
+                self._transform_cmd.transform.position.y = translation["y"]
+                self._transform_cmd.transform.position.z = translation["z"]
+                self._transform_cmd.transform.orientation.x = quat_angle["x"]
+                self._transform_cmd.transform.orientation.y = quat_angle["y"]
+                self._transform_cmd.transform.orientation.z = quat_angle["z"]
+                self._transform_cmd.transform.orientation.w = quat_angle["w"]
+                self._list_transform_cmd.data[joint_idx] = self._transform_cmd
+            self._transform_cmd.header.stamp.sec = time_sec
+            self._transform_cmd.header.stamp.nanosec = time_nano 
+            self._transform_cmd.header.frame_id = "world"
+            self._transform_cmd.child = "pelvis"
+            self._transform_cmd.transform.position.x = self.reference_root_pos[0]
+            self._transform_cmd.transform.position.y = self.reference_root_pos[1]
+            self._transform_cmd.transform.position.z = self.reference_root_pos[2]
+            self._transform_cmd.transform.orientation.x = self.reference_root_rot[0]
+            self._transform_cmd.transform.orientation.y = self.reference_root_rot[1]
+            self._transform_cmd.transform.orientation.z = self.reference_root_rot[2]
+            self._transform_cmd.transform.orientation.w = self.reference_root_rot[3]
+            self._list_transform_cmd.data[-1] = self._transform_cmd
+            # print(self._list_transform_cmd.data)
+
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
-            self._log_cmd.motor_state = self._low_state.motor_state
-            self._log_cmd.imu_state = self._low_state.imu_state      
+            # print(self._list_transform_cmd)
+
 
 
     def publish_joint_torque_cmd(self, cmd_joint_torques: np.ndarray):
@@ -234,12 +421,8 @@ class G1SDKWrapper:
         self.control_dt_ = self.cfg.reset_step_dt
         self.duration_ = self.cfg.reset_duration
         desired_joint_positions = desired_joint_positions.flatten()
-        
-        desired_joint_positions_init = np.array([-0.1, 0.0, 0.0, 0.3, -0.2, 0.0,
-                                                 -0.1, 0.0, 0.0, 0.3, -0.2, 0.0,
-                                                 0.0, 0.0, 0.0,
-                                                 0.0, 0.0, 0, 0.0,
-                                                 0.0, 0.0, 0, 0.0])
+
+        self.desired_joint_positions_init = np.array(list(self.cfg.robot_init_state["joint_pos"].values()))
         
         print("Resetting G1 to default pose.")
         print("desired_joint_positions: ", desired_joint_positions)
@@ -249,7 +432,7 @@ class G1SDKWrapper:
             print(f"\rResetting: {int(self.duration_ - self.time_)}s remaining...", end="", flush=True)
             current_joint_positions = self.joint_positions
             target_joint_positions = (
-                current_joint_positions + (desired_joint_positions_init - current_joint_positions) * ratio
+                current_joint_positions + (self.desired_joint_positions_init - current_joint_positions) * ratio
             )
             self.publish_joint_position_cmd(target_joint_positions)
             # print("current_joint_positions: ", current_joint_positions[0:15])

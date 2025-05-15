@@ -54,7 +54,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "vr": {
         "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
-        "lower_body": ["waist.*joint.*", "root.*"],
+        "lower_body": ["waist.*joint.*", "root_linear_velocity.*"],
     }
 }
 
@@ -196,8 +196,13 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
     distill_mask_sparsity_randomization_enabled = False
-    # distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
-    distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], 
+                          "h2o": DISTILL_MASK_MODES_ALL["h2o"], 
+                          "exbody": DISTILL_MASK_MODES_ALL["exbody"], 
+                          "humanplus": DISTILL_MASK_MODES_ALL["humanplus"],
+                           "vr": DISTILL_MASK_MODES_ALL["vr"],
+                          }
+    # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
     enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
                            "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
@@ -421,12 +426,12 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
 
         if self.mode == NeuralWBCModes.TRAIN:
             self.episode_length_s = 20.0
-            self.max_ref_motion_dist = 0.5
+            self.max_ref_motion_dist = 0.3
             self.events = NeuralWBCTrainEventCfg()
             self.events.reset_robot_rigid_body_mass.params["asset_cfg"].body_names = self.mass_randomized_body_names
             self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
         elif self.mode == NeuralWBCModes.DISTILL:
-            self.max_ref_motion_dist = 0.5
+            self.max_ref_motion_dist = 0.3
             self.events = NeuralWBCTrainEventCfg()
             self.events.reset_robot_rigid_body_mass.params["asset_cfg"].body_names = self.mass_randomized_body_names
             self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
@@ -457,7 +462,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
             self.terrain = flat_terrain
             self.events = NeuralWBCPlayEventCfg()
             self.ctrl_delay_step_range = (2, 2)
-            self.max_ref_motion_dist = 0.5
+            self.max_ref_motion_dist = 0.1
             self.add_policy_obs_noise = False
             self.resample_motions = False
             # self.distill_mask_sparsity_randomization_enabled = False
@@ -467,7 +472,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
             self.events = NeuralWBCPlayEventCfg()
             self.distill_teleop_selected_keypoints_names = []
             self.ctrl_delay_step_range = (2, 2)
-            self.max_ref_motion_dist = 0.5
+            self.max_ref_motion_dist = 0.3
             self.default_rfi_lim = 0.0
             self.add_policy_obs_noise = False
             self.resample_motions = False

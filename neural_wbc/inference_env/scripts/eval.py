@@ -31,6 +31,7 @@ from neural_wbc.data import get_data_path
 parser = get_player_args(description="Evaluates motion tracking policy and collects metrics in MuJoCo.")
 parser.add_argument("--metrics_path", type=str, default=None, help="Path to store metrics in.")
 parser.add_argument("--robot_model", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment")
+parser.add_argument("--record", action="store_true", help="Record the simulation.")
 args_cli = parser.parse_args()
 
 
@@ -58,25 +59,31 @@ def main():
         env_cfg=env_cfg,
         )
     evaluator = Evaluator(env_wrapper=player.env, metrics_path=args_cli.metrics_path)
-    recorder = Recorder(env_wrapper=player.env, log_path="/home/rtx4/HOVER/")
+    if args_cli.record:
+        recorder = Recorder(env_wrapper=player.env, log_path="/home/rtx4/HOVER/")
+    else:
+        recorder = None
 
     should_stop = False
     is_record = False
     while not should_stop:
         _, obs, dones, extras = player.play_once()
 
-        is_record = recorder.collect(dones=dones.clone(), info=extras.copy())
+        if recorder is not None:
+            is_record = recorder.collect(dones=dones.clone(), info=extras.copy())
         reset_env = evaluator.collect(dones=dones, info=extras)
         if reset_env and not evaluator.is_evaluation_complete():
-            evaluator.visualize(dt=env_cfg.dt * env_cfg.decimation)
+            # evaluator.visualize(dt=env_cfg.dt * env_cfg.decimation)
             evaluator.forward_motion_samples()
             _ = player.reset()
         should_stop = evaluator.is_evaluation_complete()
 
     evaluator.conclude()
-    if is_record:
+    if recorder is not None:
         recorder.save()
         print("Recording completed and saved.")
+    else:
+        print("No recording was made.")
 
 
 if __name__ == "__main__":

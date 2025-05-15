@@ -4,3 +4,5 @@ logs/
 /data/
 third_party/human2humanoid
 motions/
+*.npy
+*.ipynb

@@ -80,12 +80,12 @@ class MujocoVisualizer:
         if mask[-7:].sum() > 0:
             root_pos = np.squeeze(state.root_pos.detach().cpu().numpy())
             root_pos[2] += 1.0
-            root_rot = math_utils.euler_xyz_from_quat(state.root_rot.detach().cpu())
+            root_rot = math_utils.euler_xyz_from_quat(state.root_rot.detach().cpu()) # roll, pitch, yaw
             scale = abs(np.squeeze(state.root_lin_vel.detach().cpu().numpy())[0])
             self._viewer.add_marker(type=mj.mjtGeom.mjGEOM_ARROW,
                       pos=root_pos,
                       label=" ",
-                      mat=R.from_euler('xyz', [root_rot[0].item(), root_rot[1].item(), root_rot[2].item()], degrees=False).as_matrix(),
+                      mat=R.from_euler('zyx', [-root_rot[0].item(), -root_rot[1].item(), -root_rot[2].item()], degrees=False).as_matrix(),
                       size=(0.02, 0.02, 0.15 + scale),
                       rgba=(0, 1, 0, 0.8),
                       emission=1)

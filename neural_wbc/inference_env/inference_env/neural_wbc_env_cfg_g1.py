@@ -43,7 +43,7 @@ DISTILL_MASK_MODES_ALL = {
     },
     "vr": {
         "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
-        "lower_body": ["waist.*joint.*", "root.*"],
+        "lower_body": ["waist.*joint.*", "root_linear_velocity.*"],
     }
 }
 
@@ -112,7 +112,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
                 ]
 
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"h2o": DISTILL_MASK_MODES_ALL["h2o"]}
+    distill_mask_modes = {"vr": DISTILL_MASK_MODES_ALL["vr"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
@@ -142,16 +142,16 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_hip_pitch_joint": 100.,
         "left_hip_roll_joint": 100.,
         "left_hip_yaw_joint": 100.,
-        "left_knee_joint": 150.,
-        "left_ankle_pitch_joint": 40.,
-        "left_ankle_roll_joint": 40.,
+        "left_knee_joint": 200.,
+        "left_ankle_pitch_joint": 20.,
+        "left_ankle_roll_joint": 20.,
 
         "right_hip_pitch_joint": 100.,
         "right_hip_roll_joint": 100.,
         "right_hip_yaw_joint": 100.,
-        "right_knee_joint": 150.,
-        "right_ankle_pitch_joint": 40.,
-        "right_ankle_roll_joint": 40.,
+        "right_knee_joint": 200.,
+        "right_ankle_pitch_joint": 20.,
+        "right_ankle_roll_joint": 20.,
         
         "waist_yaw_joint": 120.,
         "waist_roll_joint": 120.,
@@ -177,19 +177,19 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     }
 
     damping = {
-        "left_hip_pitch_joint": 2.,
-        "left_hip_roll_joint": 2.,
-        "left_hip_yaw_joint": 2.,
-        "left_knee_joint": 4.,
-        "left_ankle_pitch_joint": 2.,
-        "left_ankle_roll_joint": 2.,
+        "left_hip_pitch_joint": 2.5,
+        "left_hip_roll_joint": 2.5,
+        "left_hip_yaw_joint": 2.5,
+        "left_knee_joint": 5.0,
+        "left_ankle_pitch_joint": 0.2,
+        "left_ankle_roll_joint": 0.1,
 
-        "right_hip_pitch_joint": 2.,
-        "right_hip_roll_joint": 2.,
-        "right_hip_yaw_joint": 2.,
-        "right_knee_joint": 4.,
-        "right_ankle_pitch_joint": 2.,
-        "right_ankle_roll_joint": 2.,
+        "right_hip_pitch_joint": 2.5,
+        "right_hip_roll_joint": 2.5,
+        "right_hip_yaw_joint": 2.5,
+        "right_knee_joint": 5.0,
+        "right_ankle_pitch_joint": 0.2,
+        "right_ankle_roll_joint": 0.1,
         
         "waist_yaw_joint": 3.,
         "waist_roll_joint": 3.,

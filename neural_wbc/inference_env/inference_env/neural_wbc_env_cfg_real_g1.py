@@ -115,7 +115,7 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
                 ]
 
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
+    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "torso_link"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
@@ -141,13 +141,14 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     robot_actuation_type: Literal["Pos", "Torque"] = "Pos"
 
     # hardware parameters
-    network_interface = "eno1"
-    # network_interface = "lo"
+    # network_interface = "eno1"
+    network_interface = "lo"
     state_channel = "rt/lowstate"
     command_channel = "rt/lowcmd"
     information_channel = "rt/info4debug"
+    vis_ref_motion_channel = "rt/refmotion"
     subscriber_freq = 10
-    reset_duration = 5.0   # seconds
+    reset_duration = 3.0   # seconds
     reset_step_dt = 0.02  # seconds
     robot_command_mode = "position"  # position or torque
     gravity_value = -9.8  # m/s^2
@@ -275,16 +276,16 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
         "left_hip_pitch_joint": 100.,
         "left_hip_roll_joint": 100.,
         "left_hip_yaw_joint": 100.,
-        "left_knee_joint": 150.,
-        "left_ankle_pitch_joint": 40.,
-        "left_ankle_roll_joint": 40.,
+        "left_knee_joint": 200.,
+        "left_ankle_pitch_joint": 20.,
+        "left_ankle_roll_joint": 20.,
 
         "right_hip_pitch_joint": 100.,
         "right_hip_roll_joint": 100.,
         "right_hip_yaw_joint": 100.,
-        "right_knee_joint": 150.,
-        "right_ankle_pitch_joint": 40.,
-        "right_ankle_roll_joint": 40.,
+        "right_knee_joint": 200.,
+        "right_ankle_pitch_joint": 20.,
+        "right_ankle_roll_joint": 20.,
         
         "waist_yaw_joint": 120.,
         "waist_roll_joint": 120.,
@@ -310,33 +311,33 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     }
 
     damping = {
-        "left_hip_pitch_joint": 2.,
-        "left_hip_roll_joint": 2.,
-        "left_hip_yaw_joint": 2.,
-        "left_knee_joint": 4.,
-        "left_ankle_pitch_joint": 2.,
-        "left_ankle_roll_joint": 2.,
+        "left_hip_pitch_joint": 2.5,
+        "left_hip_roll_joint": 2.5,
+        "left_hip_yaw_joint": 2.5,
+        "left_knee_joint": 5.,
+        "left_ankle_pitch_joint": 0.2,
+        "left_ankle_roll_joint": 0.1,
 
-        "right_hip_pitch_joint": 2.,
-        "right_hip_roll_joint": 2.,
-        "right_hip_yaw_joint": 2.,
-        "right_knee_joint": 4.,
-        "right_ankle_pitch_joint": 2.,
-        "right_ankle_roll_joint": 2.,
+        "right_hip_pitch_joint": 2.5,
+        "right_hip_roll_joint": 2.5,
+        "right_hip_yaw_joint": 2.5,
+        "right_knee_joint": 5.,
+        "right_ankle_pitch_joint": 0.2,
+        "right_ankle_roll_joint": 0.1,
         
         "waist_yaw_joint": 3.,
         "waist_roll_joint": 3.,
         "waist_pitch_joint": 3.,
         
-        "left_shoulder_pitch_joint": 2.,
-        "left_shoulder_roll_joint": 2.,
-        "left_shoulder_yaw_joint": 2.,
-        "left_elbow_joint": 2.,
+        "left_shoulder_pitch_joint": 1.,
+        "left_shoulder_roll_joint": 1.,
+        "left_shoulder_yaw_joint": 1.,
+        "left_elbow_joint": 1.5,
         
-        "right_shoulder_pitch_joint": 2.,
-        "right_shoulder_roll_joint": 2.,
-        "right_shoulder_yaw_joint": 2.,
-        "right_elbow_joint": 2.,
+        "right_shoulder_pitch_joint": 1.,
+        "right_shoulder_roll_joint": 1.,
+        "right_shoulder_yaw_joint": 1.,
+        "right_elbow_joint": 1.5,
 
         # fixed wrists
         "left_wrist_roll_joint": 1.,
@@ -445,6 +446,8 @@ class NeuralWBCEnvCfgRealG1(NeuralWBCEnvCfg):
     # Lower and upper body joint ids in the MJCF model.
     lower_body_joint_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # hips, knees, ankles, torso
     upper_body_joint_ids = [15, 16, 17, 18, 19, 20, 21, 22]  # torso, shoulders, elbows
+
+    model_urdf_path = get_data_path("robots/g1/g1_29dof_anneal_23dof.urdf")
 
     def __post_init__(self):
         self.reference_motion_cfg.robot_name = "g1"

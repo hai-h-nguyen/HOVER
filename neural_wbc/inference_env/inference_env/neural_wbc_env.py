@@ -97,7 +97,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
             self._joint_ids = self._joint_ids_original
 
         self._base_name = "torso_link"
-        self._base_id = self._body_ids[self._base_name]
+        # self._base_id = self._body_ids[self._base_name]
+        self._base_id = [k for k in self._body_ids.keys()].index(self._base_name)
 
         self.num_actions = self._robot.num_controls
 
@@ -138,11 +139,11 @@ class NeuralWBCEnv(EnvironmentWrapper):
         self._d_gains = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self.device)
         for key, value in self.cfg.stiffness.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._p_gains[:, joint_id_dict[key]] = value * 0.9
+            self._p_gains[:, joint_id_dict[key]] = value
             print("[INFO]: Setting up p gains", joint_id_dict[key], key, value)
         for key, value in self.cfg.damping.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._d_gains[:, joint_id_dict[key]] = value * 1.1
+            self._d_gains[:, joint_id_dict[key]] = value
             print("[INFO]: Setting up d gains", joint_id_dict[key], key, value)
 
         self._effort_limit = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self.device)
@@ -159,8 +160,8 @@ class NeuralWBCEnv(EnvironmentWrapper):
         )
         for key, value in self.cfg.position_limit.items():
             joint_id_dict = self._robot.get_joint_ids([key])
-            self._lower_position_limit[:, joint_id_dict[key]] = value[0] + 0.01
-            self._upper_position_limit[:, joint_id_dict[key]] = value[1] - 0.01
+            self._lower_position_limit[:, joint_id_dict[key]] = value[0]
+            self._upper_position_limit[:, joint_id_dict[key]] = value[1]
             print("[INFO]: Setting position limit", joint_id_dict[key], key, value)
 
         # resolve the controller
@@ -283,6 +284,11 @@ class NeuralWBCEnv(EnvironmentWrapper):
 
             # Convert it to numpy and apply it to the simulator.
             processed_action_np = self._processed_action.detach().cpu().numpy()
+            if self.cfg.robot == "unitree_g1":
+                self.robot._g1_sdk.reference_joint_pos = self.extras["data"]["ground_truth"]["joint_pos"].clone().squeeze(0).tolist()
+                self.robot._g1_sdk.reference_joint_vel = self.extras["data"]["ground_truth"]["joint_vel"].clone().squeeze(0).tolist()
+                self.robot._g1_sdk.reference_root_pos = self.extras["data"]["ground_truth"]["root_pos"].clone().squeeze(0).tolist()
+                self.robot._g1_sdk.reference_root_rot = self.extras["data"]["ground_truth"]["root_rot"].clone().squeeze(0).tolist()
             self.robot.step(processed_action_np)
 
         # Forward the current episode step buffer to keep track of current number of steps into the motion reference.
@@ -531,6 +537,11 @@ class NeuralWBCEnv(EnvironmentWrapper):
         current_body_state = self._compose_body_state(
             extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids
         )
+        # print(current_body_state.root_pos)
+        # print(ref_motion_state.root_pos)
+        # print(current_body_state.root_rot)
+        # print(ref_motion_state.root_rot)
+        # print("="* 10)
 
         self.extras["data"] = {
             "mask": self._mask.detach().clone(),
@@ -555,6 +566,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
             "ground_truth": {
                 "body_pos": ref_motion_state.body_pos_extend.detach().clone(),
                 "joint_pos": ref_motion_state.joint_pos.detach().clone(),
+                "joint_vel": ref_motion_state.joint_vel.detach().clone(),
                 "root_pos": ref_motion_state.root_pos.detach().clone(),
                 "root_rot": ref_motion_state.root_rot.detach().clone(),
                 "root_lin_vel": ref_motion_state.root_lin_vel.detach().clone(),
