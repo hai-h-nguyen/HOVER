@@ -151,7 +151,6 @@ class UnitreeG1(Robot):
     def _send_torque_command(self, torques: np.ndarray | None = None) -> None:
         """Send torque commands to the robot"""
         if torques:
-
             torques = np.clip(torques, -self._effort_limits, self._effort_limits)
             self._h12_sdk.publish_joint_torque_cmd(torques.flatten())
 

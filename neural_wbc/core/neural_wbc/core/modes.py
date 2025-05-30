@@ -30,13 +30,13 @@ class NeuralWBCModes(enum.Enum):
 
     def is_distill_test_mode(self):
         return self == self.DISTILL_TEST
-    
+
     def is_delta_action_mode(self):
         return self in {self.DELTA_ACTION, self.DELTA_ACTION_TEST}
-    
+
     def is_delta_action_test_mode(self):
         return self == self.DELTA_ACTION_TEST
-    
+
     def is_finetune_mode(self):
         return self in {self.FINETUNE, self.FINETUNE_TEST}
 

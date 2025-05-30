@@ -18,14 +18,15 @@ from __future__ import annotations
 
 import numpy as np
 import torch
-
 from scipy.spatial.transform import Rotation as R
+
 import mujoco as mj
 from mujoco_wrapper.mujoco_utils import get_entity_id, get_entity_name, has_free_joint
 from mujoco_wrapper.utils import squeeze_if_tensor, to_numpy
 from mujoco_wrapper.visualization import MujocoVisualizer
 
 from neural_wbc.core.reference_motion import ReferenceMotionState
+
 
 def multiply_quaternions_wxyz(q1, q2):
     """Helper for quaternion multiplication (wxyz format)."""
@@ -36,22 +37,25 @@ def multiply_quaternions_wxyz(q1, q2):
     y = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
     z = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
     norm = np.sqrt(w**2 + x**2 + y**2 + z**2)
-    return np.array([w, x, y, z]) / norm if norm > 1e-8 else np.array([1., 0., 0., 0.])
+    return np.array([w, x, y, z]) / norm if norm > 1e-8 else np.array([1.0, 0.0, 0.0, 0.0])
+
 
 def rotate_vector_by_quat_wxyz(q, v):
     """Helper for rotating a vector by a quaternion (wxyz format)."""
     q_norm = np.sqrt(np.sum(q**2))
     q = q / q_norm if q_norm >= 1e-8 else np.array([1.0, 0.0, 0.0, 0.0])
-    q_v = np.concatenate(([0.], v))
+    q_v = np.concatenate(([0.0], v))
     q_conj = np.array([q[0], -q[1], -q[2], -q[3]])
     q_rotated_v = multiply_quaternions_wxyz(multiply_quaternions_wxyz(q, q_v), q_conj)
     return q_rotated_v[1:]
 
+
 def get_gravity_orientation_standard(quat_wxyz):
     """Calculates the projected gravity vector using standard quaternion rotation."""
-    gravity_vec_world = np.array([0., 0., -1.])
+    gravity_vec_world = np.array([0.0, 0.0, -1.0])
     quat_inv_wxyz = np.array([quat_wxyz[0], -quat_wxyz[1], -quat_wxyz[2], -quat_wxyz[3]])
     return rotate_vector_by_quat_wxyz(quat_inv_wxyz, gravity_vec_world).astype(np.float32)
+
 
 class WBCMujoco:
     """Whole Body Control using Mujoco Simulator
@@ -387,7 +391,6 @@ class WBCMujoco:
         Returns:
             torch.Tensor: Projection of the gravity vector to the base frame
         """
-        # base_name = "pelvis"
         # world_gravity = self._model.opt.gravity
         # # Normalize the gravity to match IsaacLab.
         # world_gravity = world_gravity / np.linalg.norm(world_gravity)
@@ -398,12 +401,23 @@ class WBCMujoco:
         # # Convert it back to the actual body_id inside the Mujoco model
         # body_id += 1
 
-
         # root_b_w = np.linalg.inv(self.data.xmat[body_id].reshape(3, 3))
         # grav = root_b_w @ world_gravity  # Gravity vector in body frame
         # return torch.tensor(grav, device=self.device, dtype=torch.float32).expand(self.num_instances, -1)
-        
+
+        # waist_yaw = self.joint_positions[:, self.joint_names.index("waist_yaw_joint")].item()
+        # waist_roll = self.joint_positions[:, self.joint_names.index("waist_roll_joint")].item()
+        # waist_pitch = self.joint_positions[:, self.joint_names.index("waist_pitch_joint")].item()
+        # R_rel = R.from_euler("zxy", [waist_yaw, waist_roll, waist_pitch])
+        # R_rel_inv = R_rel.inv()
+
+        # q_pelvis_world_rot = R.from_quat([torso_quat[1], torso_quat[2], torso_quat[3], torso_quat[0]]) * R_rel_inv
+        # q_pelvis_world_rot = q_pelvis_world_rot.as_quat()
+        # q_pelvis_world_rot = np.array([q_pelvis_world_rot[3], q_pelvis_world_rot[0], q_pelvis_world_rot[1], q_pelvis_world_rot[2]])
+        # import ipdb; ipdb.set_trace()
+
         grav1 = get_gravity_orientation_standard(self.data.qpos[3:7])
+        # print("difference 0:", np.linalg.norm(q_pelvis_world_rot - self.data.qpos[3:7]))
         return torch.tensor(grav1, device=self.device, dtype=torch.float32).expand(self.num_instances, -1)
 
     def get_terrain_heights(self) -> torch.Tensor:

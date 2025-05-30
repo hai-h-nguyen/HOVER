@@ -103,7 +103,9 @@ class DeploymentPlayer:
                 actions = ext_actions
             else:
                 actions = self.policy(obs)
-            _, obs, dones, extras = self.env.step(actions)  # For HW, this internally just does forward and sends commands
+            _, obs, dones, extras = self.env.step(
+                actions
+            )  # For HW, this internally just does forward and sends commands
         return actions, obs, dones, extras
 
     def reset(self):

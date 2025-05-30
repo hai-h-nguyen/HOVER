@@ -14,9 +14,10 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-import re
-import numpy as np
 import math
+import numpy as np
+import re
+
 
 class Filter:
     def __init__(self, T1, Ts, num_dofs):
@@ -42,9 +43,11 @@ class Filter:
                 qp[i] = 0
             else:
                 qp[i] = self.x[i] + self.V1 * q[i]
-                self.x[i] = (math.exp(-self.Ts / self.T1) * self.x[i] +
-                             (math.exp(-self.Ts / self.T1) - 1) * self.V1 * q[i])
+                self.x[i] = (
+                    math.exp(-self.Ts / self.T1) * self.x[i] + (math.exp(-self.Ts / self.T1) - 1) * self.V1 * q[i]
+                )
         return qp
+
 
 def assert_equal(lhs: any, rhs: any, name: str):
     """Assert that 2 values are equal and provide a useful error if not.

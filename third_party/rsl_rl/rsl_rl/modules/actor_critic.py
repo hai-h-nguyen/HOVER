@@ -49,10 +49,7 @@ class ActorCritic(nn.Module):
         **kwargs,
     ):
         if kwargs:
-            print(
-                "ActorCritic.__init__ got unexpected arguments, which will be ignored: "
-                + str([key for key in kwargs.keys()])
-            )
+            print("ActorCritic.__init__ got unexpected arguments, which will be ignored: " + str([key for key in kwargs.keys()]))
         super(ActorCritic, self).__init__()
 
         activation = get_activation(activation)
@@ -101,10 +98,8 @@ class ActorCritic(nn.Module):
     @staticmethod
     # not used at the moment
     def init_weights(sequential, scales):
-        [
-            torch.nn.init.orthogonal_(module.weight, gain=scales[idx])
-            for idx, module in enumerate(mod for mod in sequential if isinstance(mod, nn.Linear))
-        ]
+        [torch.nn.init.orthogonal_(module.weight, gain=scales[idx]) for idx, module in 
+         enumerate(mod for mod in sequential if isinstance(mod, nn.Linear))]
 
     def reset(self, dones=None):
         pass
@@ -142,7 +137,6 @@ class ActorCritic(nn.Module):
     def evaluate(self, critic_observations, **kwargs):
         value = self.critic(critic_observations)
         return value
-
 
 def get_activation(act_name):
     if act_name == "elu":

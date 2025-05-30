@@ -14,4 +14,5 @@
 # limitations under the License.
 
 
+from .event_almi_cfg import *  # noqa
 from .event_cfg import *  # noqa

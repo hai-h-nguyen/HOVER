@@ -19,15 +19,15 @@ import time
 import torch
 import yaml
 
-from hw_wrappers.unitree_h1 import UnitreeH1  # noqa
 from hw_wrappers.unitree_g1 import UnitreeG1  # noqa
+from hw_wrappers.unitree_h1 import UnitreeH1  # noqa
 from inference_env.deployment_player import DeploymentPlayer
-from inference_env.neural_wbc_env_cfg_real_h1 import NeuralWBCEnvCfgRealH1
 from inference_env.neural_wbc_env_cfg_real_g1 import NeuralWBCEnvCfgRealG1
+from inference_env.neural_wbc_env_cfg_real_h1 import NeuralWBCEnvCfgRealH1
 from inference_env.utils import get_player_args
+
 # from pynput.keyboard import Controller
 from neural_wbc.core.evaluator import Evaluator
-
 from neural_wbc.data import get_data_path
 
 parser = get_player_args(description="Basic deployment player for running HOVER policy on real robots.")
@@ -78,7 +78,7 @@ def main():
         remaining_time = inference_time - elapsed_time
         if remaining_time > 0.0:
             time.sleep(remaining_time)
-        # reset_env = evaluator.collect(dones=dones, info=extras) 
+        # reset_env = evaluator.collect(dones=dones, info=extras)
 
 
 if __name__ == "__main__":

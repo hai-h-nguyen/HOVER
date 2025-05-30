@@ -62,6 +62,7 @@ class UnitreeG1(Robot):
         self.joint_pos_offset = self._kinematic_model.joint_pos_offset
         self.joint_vel_offset = self._kinematic_model.joint_vel_offset
         self.qpos_at_first_step = None
+        self.pelvis_quat = None
 
     def _resolve_command_fn(
         self,
@@ -99,6 +100,8 @@ class UnitreeG1(Robot):
             torch.from_numpy(self._g1_sdk.joint_velocities).unsqueeze(0).to(dtype=torch.float32, device=self.device)
         )
         if self.qpos_at_first_step is not None:
+            # if self.pelvis_quat is not None:
+            # self.qpos_at_first_step[:, 3:7] = torch.tensor(self.pelvis_quat, device=self.device).unsqueeze(0)
             qpos = torch.hstack((self.qpos_at_first_step, self._joint_positions))
         else:
             qpos = torch.hstack((self._root_position, self._root_rotation, self._joint_positions))
@@ -125,8 +128,8 @@ class UnitreeG1(Robot):
         joint_positions = qpos[..., self._kinematic_model.joint_pos_offset :]
         joint_positions_np = joint_positions.cpu().numpy()
 
-        self.qpos_at_first_step =  qpos[..., :self._kinematic_model.joint_pos_offset].clone()
-        self.qpos_at_first_step[:, 2] = 0.82
+        self.qpos_at_first_step = qpos[..., : self._kinematic_model.joint_pos_offset].clone()
+        self.qpos_at_first_step[:, 2] = 0.78
 
         # Reset robot pose
         self._g1_sdk.reset(joint_positions_np)
@@ -208,9 +211,13 @@ class UnitreeG1(Robot):
             torch.Tensor: Projection of the gravity vector to the base frame
         """
         # Get torso orientation in quaternion [w, x, y, z]
-        torso_orientation_quat = self._g1_sdk.torso_orientation
+        orientation_quat = self._g1_sdk.torso_orientation
+        # if base_name == "torso_link":
+        #     # compute pelvis orientation from torso orientation
+        #     orientation_quat = self.transform_quaternion_from_torso_to_pelvis(orientation_quat)
+        #     self.pelvis_quat = orientation_quat.copy()
         # Create rotation matrix from quaternion
-        torso_rot_mat_np = R.from_quat(torso_orientation_quat, scalar_first=True).as_matrix()
+        torso_rot_mat_np = R.from_quat(orientation_quat, scalar_first=True).as_matrix()
         torso_rot_mat = torch.tensor(torso_rot_mat_np, device=self.device, dtype=torch.float32)
 
         # World gravity vector (normalized)
@@ -220,6 +227,17 @@ class UnitreeG1(Robot):
         base_gravity = torso_rot_mat.T @ world_gravity
 
         return base_gravity.unsqueeze(0)
+
+    def transform_quaternion_from_torso_to_pelvis(self, torso_quat):
+        waist_yaw = self.joint_positions[:, self.joint_names.index("waist_yaw_joint")].item()
+        waist_roll = self.joint_positions[:, self.joint_names.index("waist_roll_joint")].item()
+        waist_pitch = self.joint_positions[:, self.joint_names.index("waist_pitch_joint")].item()
+        R_rel = R.from_euler("zxy", [waist_yaw, waist_roll, waist_pitch])
+        R_rel_inv = R_rel.inv()
+
+        q_pelvis_world_rot = R.from_quat([torso_quat[1], torso_quat[2], torso_quat[3], torso_quat[0]]) * R_rel_inv
+        q_pelvis_world_rot = q_pelvis_world_rot.as_quat()
+        return np.array([q_pelvis_world_rot[3], q_pelvis_world_rot[0], q_pelvis_world_rot[1], q_pelvis_world_rot[2]])
 
     def get_base_angular_velocity(self, base_name: str = "torso_link") -> torch.Tensor:
         """Get the angular velocity of the base

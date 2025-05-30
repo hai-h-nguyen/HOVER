@@ -72,14 +72,13 @@ class RolloutStorage:
         # Core
         self.observations = torch.zeros(num_transitions_per_env, num_envs, *obs_shape, device=self.device)
         if privileged_obs_shape[0] is not None:
-            self.privileged_observations = torch.zeros(
-                num_transitions_per_env, num_envs, *privileged_obs_shape, device=self.device
-            )
+            self.privileged_observations = torch.zeros(num_transitions_per_env, num_envs, *privileged_obs_shape, device=self.device)
         else:
             self.privileged_observations = None
         self.rewards = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device)
         self.actions = torch.zeros(num_transitions_per_env, num_envs, *actions_shape, device=self.device)
         self.dones = torch.zeros(num_transitions_per_env, num_envs, 1, device=self.device).byte()
+        
         if not kin_dict_info is None:
             kin_dict_size = np.sum([v[-1][-1] for k, v in kin_dict_info.items()])
             self.kin_dict = torch.zeros(num_transitions_per_env, num_envs, kin_dict_size, device=self.device)
@@ -164,9 +163,7 @@ class RolloutStorage:
         done = self.dones
         done[-1] = 1
         flat_dones = done.permute(1, 0, 2).reshape(-1, 1)
-        done_indices = torch.cat(
-            (flat_dones.new_tensor([-1], dtype=torch.int64), flat_dones.nonzero(as_tuple=False)[:, 0])
-        )
+        done_indices = torch.cat((flat_dones.new_tensor([-1], dtype=torch.int64), flat_dones.nonzero(as_tuple=False)[:, 0]))
         trajectory_lengths = done_indices[1:] - done_indices[:-1]
         return trajectory_lengths.float().mean(), self.rewards.mean()
 
@@ -190,13 +187,12 @@ class RolloutStorage:
         old_sigma = self.sigma.flatten(0, 1)
         if not self.kin_dict is None:
             kin_dict = self.kin_dict.flatten(0, 1)
-        # import ipdb; ipdb.set_trace()
+
         for epoch in range(num_epochs):
             for i in range(num_mini_batches):
 
                 start = i * mini_batch_size
                 end = (i + 1) * mini_batch_size
-                stop = (i + 1) * mini_batch_size
                 batch_idx = indices[start:end]
 
                 obs_batch = observations[batch_idx]
@@ -211,20 +207,15 @@ class RolloutStorage:
                 old_sigma_batch = old_sigma[batch_idx]
 
                 obs_squential = observations[start:end]
-                # import ipdb; ipdb.set_trace()
+
                 if not self.kin_dict is None:
                     kin_dict_batch = kin_dict[batch_idx]
-                    yield obs_batch, critic_observations_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (
-                        None,
-                        None,
-                    ), None, obs_squential, kin_dict_batch
+                    yield obs_batch, critic_observations_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, \
+                        old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (None, None), None, obs_squential, kin_dict_batch
 
                 else:
-
-                    yield obs_batch, critic_observations_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (
-                        None,
-                        None,
-                    ), None, obs_squential, None
+                    yield obs_batch, critic_observations_batch, actions_batch, target_values_batch, advantages_batch, returns_batch, \
+                        old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (None, None), None, obs_squential, None
 
     # for RNNs only
     def reccurent_mini_batch_generator(self, num_mini_batches, num_epochs=8):
@@ -252,8 +243,6 @@ class RolloutStorage:
                 trajectories_batch_size = torch.sum(last_was_done[:, start:stop])
                 last_traj = first_traj + trajectories_batch_size
 
-                # import ipdb; ipdb.set_trace()
-
                 masks_batch = trajectory_masks[:, first_traj:last_traj]
                 obs_batch = padded_obs_trajectories[:, first_traj:last_traj]
                 critic_obs_batch = padded_critic_obs_trajectories[:, first_traj:last_traj]
@@ -267,22 +256,15 @@ class RolloutStorage:
                 old_actions_log_prob_batch = self.actions_log_prob[:, start:stop]
 
                 obs_squential = self.observations[:, start:stop]
+
                 # reshape to [num_envs, time, num layers, hidden dim] (original shape: [time, num_layers, num_envs, hidden_dim])
                 # then take only time steps after dones (flattens num envs and time dimensions),
                 # take a batch of trajectories and finally reshape back to [num_layers, batch, hidden_dim]
                 last_was_done = last_was_done.permute(1, 0)
-                hid_a_batch = [
-                    saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][first_traj:last_traj]
-                    .transpose(1, 0)
-                    .contiguous()
-                    for saved_hidden_states in self.saved_hidden_states_a
-                ]
-                hid_c_batch = [
-                    saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][first_traj:last_traj]
-                    .transpose(1, 0)
-                    .contiguous()
-                    for saved_hidden_states in self.saved_hidden_states_c
-                ]
+                hid_a_batch = [saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][first_traj:last_traj].transpose(1, 0).contiguous()
+                    for saved_hidden_states in self.saved_hidden_states_a]
+                hid_c_batch = [saved_hidden_states.permute(2, 0, 1, 3)[last_was_done][first_traj:last_traj].transpose(1, 0).contiguous()
+                    for saved_hidden_states in self.saved_hidden_states_c]
                 # remove the tuple for GRU
                 hid_a_batch = hid_a_batch[0] if len(hid_a_batch) == 1 else hid_a_batch
                 hid_c_batch = hid_c_batch[0] if len(hid_c_batch) == 1 else hid_c_batch
@@ -290,16 +272,11 @@ class RolloutStorage:
                 if not self.kin_dict is None:
                     kin_dict_batch = kin_dict[:, start:stop]
                     # print("obs_batch", obs_batch.shape)
-                    yield obs_batch, critic_obs_batch, actions_batch, values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (
-                        hid_a_batch,
-                        hid_c_batch,
-                    ), masks_batch, obs_squential, kin_dict_batch
+                    yield obs_batch, critic_obs_batch, actions_batch, values_batch, advantages_batch, returns_batch, \
+                        old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (hid_a_batch, hid_c_batch), masks_batch, obs_squential, kin_dict_batch
 
                 else:
-                    print("obs_batch", obs_batch.shape)
-                    yield obs_batch, critic_obs_batch, actions_batch, values_batch, advantages_batch, returns_batch, old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (
-                        hid_a_batch,
-                        hid_c_batch,
-                    ), masks_batch, obs_squential, None
+                    yield obs_batch, critic_obs_batch, actions_batch, values_batch, advantages_batch, returns_batch, \
+                        old_actions_log_prob_batch, old_mu_batch, old_sigma_batch, (hid_a_batch, hid_c_batch), masks_batch, obs_squential, None
 
                 first_traj = last_traj

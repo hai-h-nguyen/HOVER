@@ -33,7 +33,14 @@ from .terrain import HARD_ROUGH_TERRAINS_CFG, flat_terrain
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [
+            ".*shoulder_roll_link.*",
+            ".*elbow.*link.*",
+            ".*hand.*link",
+            ".*torso_joint.*",
+            ".*shoulder.*joint.*",
+            ".*elbow.*joint.*",
+        ],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -83,12 +90,14 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     # distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], "h2o": DISTILL_MASK_MODES_ALL["h2o"], "exbody": DISTILL_MASK_MODES_ALL["exbody"], "humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
     distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"]}
 
-    enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
-                           "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
-                           "left_shoulder_joint": ENFORCED_TOGETHERNESS["left_shoulder_joint"],
-                           "right_shoulder_joint": ENFORCED_TOGETHERNESS["right_shoulder_joint"],
-                           "root_velocity": ENFORCED_TOGETHERNESS["root_velocity"],
-                           "root_orientation": ENFORCED_TOGETHERNESS["root_orientation"]}
+    enforced_mask_modes = {
+        "left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
+        "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
+        "left_shoulder_joint": ENFORCED_TOGETHERNESS["left_shoulder_joint"],
+        "right_shoulder_joint": ENFORCED_TOGETHERNESS["right_shoulder_joint"],
+        "root_velocity": ENFORCED_TOGETHERNESS["root_velocity"],
+        "root_orientation": ENFORCED_TOGETHERNESS["root_orientation"],
+    }
 
     # Robot geometry / actuation parameters:
     actuators = {

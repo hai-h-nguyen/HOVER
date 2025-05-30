@@ -22,10 +22,16 @@ from inference_env.neural_wbc_env_cfg import NeuralWBCEnvCfg
 from neural_wbc.core.mask import calculate_mask_length
 from neural_wbc.data import get_data_path
 
-
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [
+            ".*shoulder_roll_link.*",
+            ".*elbow.*link.*",
+            ".*hand.*link",
+            ".*torso_joint.*",
+            ".*shoulder.*joint.*",
+            ".*elbow.*joint.*",
+        ],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -55,63 +61,54 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
     ctrl_delay_step_range = [2, 2]
     default_rfi_lim = 0
     robot = "mujoco_robot"
-    
+
     body_names = [
-                  'pelvis',
-                  
-                  'left_hip_yaw_link',
-                  'left_hip_pitch_link',
-                  'left_hip_roll_link',
-                  'left_knee_link',
-                  'left_ankle_pitch_link',
-                  'left_ankle_roll_link',
-                  
-                  'right_hip_yaw_link',
-                  'right_hip_pitch_link',
-                  'right_hip_roll_link',
-                  'right_knee_link',
-                  'right_ankle_pitch_link',
-                  'right_ankle_roll_link',
-
-                  'torso_link',
-                  
-                  'left_shoulder_pitch_link',
-                  'left_shoulder_roll_link',
-                  'left_shoulder_yaw_link',
-                  'left_elbow_link',
-
-                  'right_shoulder_pitch_link',
-                  'right_shoulder_roll_link',
-                  'right_shoulder_yaw_link',
-                  'right_elbow_link',
-                ]
+        "pelvis",
+        "left_hip_yaw_link",
+        "left_hip_pitch_link",
+        "left_hip_roll_link",
+        "left_knee_link",
+        "left_ankle_pitch_link",
+        "left_ankle_roll_link",
+        "right_hip_yaw_link",
+        "right_hip_pitch_link",
+        "right_hip_roll_link",
+        "right_knee_link",
+        "right_ankle_pitch_link",
+        "right_ankle_roll_link",
+        "torso_link",
+        "left_shoulder_pitch_link",
+        "left_shoulder_roll_link",
+        "left_shoulder_yaw_link",
+        "left_elbow_link",
+        "right_shoulder_pitch_link",
+        "right_shoulder_roll_link",
+        "right_shoulder_yaw_link",
+        "right_elbow_link",
+    ]
     joint_names = [
-                    "left_hip_yaw_joint",
-                    "left_hip_pitch_joint",
-                    "left_hip_roll_joint",
-                    "left_knee_joint",
-                    "left_ankle_pitch_joint",
-                    "left_ankle_roll_joint",
-
-                    "right_hip_yaw_joint",
-                    "right_hip_pitch_joint",
-                    "right_hip_roll_joint",
-                    "right_knee_joint",
-                    "right_ankle_pitch_joint",
-                    "right_ankle_roll_joint",
-
-                    "torso_joint",
-
-                    "left_shoulder_pitch_joint",
-                    "left_shoulder_roll_joint",
-                    "left_shoulder_yaw_joint",
-                    "left_elbow_joint",
-
-                    "right_shoulder_pitch_joint",
-                    "right_shoulder_roll_joint",
-                    "right_shoulder_yaw_joint",
-                    "right_elbow_joint",
-                    ]
+        "left_hip_yaw_joint",
+        "left_hip_pitch_joint",
+        "left_hip_roll_joint",
+        "left_knee_joint",
+        "left_ankle_pitch_joint",
+        "left_ankle_roll_joint",
+        "right_hip_yaw_joint",
+        "right_hip_pitch_joint",
+        "right_hip_roll_joint",
+        "right_knee_joint",
+        "right_ankle_pitch_joint",
+        "right_ankle_roll_joint",
+        "torso_joint",
+        "left_shoulder_pitch_joint",
+        "left_shoulder_roll_joint",
+        "left_shoulder_yaw_joint",
+        "left_elbow_joint",
+        "right_shoulder_pitch_joint",
+        "right_shoulder_roll_joint",
+        "right_shoulder_yaw_joint",
+        "right_elbow_joint",
+    ]
 
     distill_mask_sparsity_randomization_enabled = False
     distill_mask_modes = {"h2o": DISTILL_MASK_MODES_ALL["h2o"]}
@@ -147,21 +144,17 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
         "left_knee_joint": 300.0,
         "left_ankle_pitch_joint": 40.0,
         "left_ankle_roll_joint": 40.0,
-
         "right_hip_yaw_joint": 200.0,
         "right_hip_pitch_joint": 200.0,
         "right_hip_roll_joint": 200.0,
         "right_knee_joint": 300.0,
         "right_ankle_pitch_joint": 40.0,
         "right_ankle_roll_joint": 40.0,
-
         "torso_joint": 300,
-
         "left_shoulder_pitch_joint": 120.0,
         "left_shoulder_roll_joint": 120.0,
         "left_shoulder_yaw_joint": 120.0,
         "left_elbow_joint": 80.0,
-
         "right_shoulder_pitch_joint": 120.0,
         "right_shoulder_roll_joint": 120.0,
         "right_shoulder_yaw_joint": 120.0,
@@ -175,21 +168,17 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
         "left_knee_joint": 4.0,
         "left_ankle_pitch_joint": 2.0,
         "left_ankle_roll_joint": 2.0,
-
         "right_hip_yaw_joint": 2.5,
         "right_hip_pitch_joint": 2.5,
         "right_hip_roll_joint": 2.5,
         "right_knee_joint": 4.0,
         "right_ankle_pitch_joint": 2.0,
         "right_ankle_roll_joint": 2.0,
-
         "torso_joint": 3.0,
-
         "left_shoulder_pitch_joint": 2.0,
         "left_shoulder_roll_joint": 2.0,
         "left_shoulder_yaw_joint": 2.0,
         "left_elbow_joint": 1.0,
-
         "right_shoulder_pitch_joint": 2.0,
         "right_shoulder_roll_joint": 2.0,
         "right_shoulder_yaw_joint": 2.0,
@@ -203,21 +192,17 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
         "left_knee_joint": 300.0,
         "left_ankle_pitch_joint": 60.0,
         "left_ankle_roll_joint": 40.0,
-
         "right_hip_yaw_joint": 200.0,
         "right_hip_pitch_joint": 200.0,
         "right_hip_roll_joint": 200.0,
         "right_knee_joint": 300.0,
         "right_ankle_pitch_joint": 60.0,
         "right_ankle_roll_joint": 40.0,
-
         "torso_joint": 200.0,
-
         "left_shoulder_pitch_joint": 40.0,
         "left_shoulder_roll_joint": 40.0,
         "left_shoulder_yaw_joint": 18.0,
         "left_elbow_joint": 18.0,
-
         "right_shoulder_pitch_joint": 40.0,
         "right_shoulder_roll_joint": 40.0,
         "right_shoulder_yaw_joint": 18.0,
@@ -231,21 +216,17 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
         "left_knee_joint": [-0.12, 2.19],
         "left_ankle_pitch_joint": [-0.897334, 0.523598],
         "left_ankle_roll_joint": [-0.261799, 0.261799],
-
         "right_hip_yaw_joint": [-0.43, 0.43],
         "right_hip_pitch_joint": [-3.14, 2.5],
         "right_hip_roll_joint": [-3.14, 0.43],
         "right_knee_joint": [-0.12, 2.19],
         "right_ankle_pitch_joint": [-0.897334, 0.523598],
         "right_ankle_roll_joint": [-0.261977, 0.261799],
-        
         "torso_joint": [-2.35, 2.35],
-        
         "left_shoulder_pitch_joint": [-3.14, 1.57],
         "left_shoulder_roll_joint": [-0.38, 3.4],
         "left_shoulder_yaw_joint": [-2.66, 3.01],
         "left_elbow_joint": [-0.95, 3.18],
-        
         "right_shoulder_pitch_joint": [-3.14, 1.57],
         "right_shoulder_roll_joint": [-3.4, 0.38],
         "right_shoulder_yaw_joint": [-3.01, 2.66],
@@ -262,21 +243,17 @@ class NeuralWBCEnvCfgH12(NeuralWBCEnvCfg):
             "left_knee_joint": 0.79,
             "left_ankle_pitch_joint": -0.52,
             "left_ankle_roll_joint": -0.52,
-
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
             "right_hip_pitch_joint": -0.28,
             "right_knee_joint": 0.79,
             "right_ankle_pitch_joint": -0.52,
             "right_ankle_roll_joint": -0.52,
-
             "torso_joint": 0.0,
-            
             "left_shoulder_pitch_joint": 0.28,
             "left_shoulder_roll_joint": 0.0,
             "left_shoulder_yaw_joint": 0.0,
             "left_elbow_joint": 0.52,
-
             "right_shoulder_pitch_joint": 0.28,
             "right_shoulder_roll_joint": 0.0,
             "right_shoulder_yaw_joint": 0.0,

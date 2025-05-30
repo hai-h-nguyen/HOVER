@@ -44,7 +44,7 @@ class H1SDKWrapper:
         self._init_cmd()
 
         self._update_mode_machine = False
-    
+
         self._low_state = None
         self.crc = CRC()
         self._joint_positions = np.zeros(self.cfg.num_joints)
@@ -98,7 +98,7 @@ class H1SDKWrapper:
         while not self._update_mode_machine:
             time.sleep(0.02)
         print("Successfully connected to the robot.")
-        
+
     def _is_weak_motor(self, motor_idx: int) -> bool:
         """Check if a motor is a weak motor.
 

@@ -69,7 +69,11 @@ class RslRlNeuralWBCVecEnvWrapper(EnvironmentWrapper):
         # store information required by wrapper
         self.num_envs = self._env.num_envs
         self.device = self._env.device
-        self.reference_motion_manager = self._env.reference_motion_manager
+        try:
+            self.reference_motion_manager = self._env.reference_motion_manager
+        except:
+            # Train ALMI policy without reference motion manager
+            pass
         self.max_episode_length = self._env.max_episode_length
         if hasattr(self._env, "action_manager"):
             self.num_actions = self.unwrapped.action_manager.total_action_dim
@@ -150,7 +154,7 @@ class RslRlNeuralWBCVecEnvWrapper(EnvironmentWrapper):
     def get_teacher_observations(self) -> torch.Tensor:
         """Returns the current observations of the environment."""
         return self.get_full_observations()["teacher_policy"]
-    
+
     def get_delta_action_observations(self) -> torch.Tensor:
         """Returns the current observations of the environment."""
         return self.get_full_observations()["delta_action_policy"]

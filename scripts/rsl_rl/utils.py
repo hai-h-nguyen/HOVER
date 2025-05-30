@@ -55,7 +55,9 @@ def get_player_args(description: str) -> argparse.ArgumentParser:
     parser.add_argument("--env_spacing", type=int, default=5, help="Distance between environments in simulator.")
     parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
     parser.add_argument("--reference_motion_path", type=str, default=None, help="Path to the reference motion dataset.")
-    parser.add_argument("--robot", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment")
+    parser.add_argument(
+        "--robot", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment"
+    )
     parser.add_argument(
         "--student_player", action="store_true", help="Whether the evaluated policy is a student policy."
     )

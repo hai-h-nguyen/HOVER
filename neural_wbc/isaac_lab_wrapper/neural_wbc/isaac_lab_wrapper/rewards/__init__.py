@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .reward_cfg_h12 import NeuralWBCRewardCfg_H12
-from .reward_cfg_g1 import NeuralWBCRewardCfg_G1, NeuralWBCRewardCfg_G1_4_DeltaAction
 from .reward_cfg import NeuralWBCRewardCfg  # noqa: F401, F403
-from .rewards import NeuralWBCRewards, NeuralWBCRewards_G1  # noqa: F401, F403
+from .reward_cfg_g1 import NeuralWBCRewardCfg_G1, NeuralWBCRewardCfg_G1_4_DeltaAction
+from .reward_cfg_h12 import NeuralWBCRewardCfg_H12
+from .reward_cfg_h12_almi import NeuralWBCRewardCfg_H12_ALMI
+from .rewards import NeuralWBCRewards, NeuralWBCRewards_G1, NeuralWBCRewards_H12_ALMI  # noqa: F401, F403

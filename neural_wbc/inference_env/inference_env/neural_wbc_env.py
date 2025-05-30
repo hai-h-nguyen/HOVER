@@ -20,17 +20,16 @@ import math
 import torch
 from typing import Literal
 
+import phc.utils.torch_utils as torch_utils
 from inference_env.neural_wbc_env_cfg import NeuralWBCEnvCfg
 from mujoco_wrapper.control import resolve_control_fn
 
-from neural_wbc.core import EnvironmentWrapper, ReferenceMotionManager, mask
+from neural_wbc.core import EnvironmentWrapper, ReferenceMotionManager, mask, math_utils
 from neural_wbc.core.body_state import BodyState
 from neural_wbc.core.observations import StudentHistory, compute_student_observations
 from neural_wbc.core.robot_wrapper import get_robot_class, get_robot_names
 from neural_wbc.core.termination import check_termination_conditions
 
-import phc.utils.torch_utils as torch_utils
-from neural_wbc.core import math_utils
 
 class NeuralWBCEnv(EnvironmentWrapper):
     """Mujoco Neural WBC Environment
@@ -108,7 +107,6 @@ class NeuralWBCEnv(EnvironmentWrapper):
         # actions
         self.actions = torch.zeros(self.num_envs, self.num_actions, device=self.device)
         self._processed_actions = torch.zeros(self.num_envs, self.num_actions, device=self.device)
-
         self.episode_length_buf = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
 
         # Resolve the extended bodies
@@ -206,16 +204,14 @@ class NeuralWBCEnv(EnvironmentWrapper):
         )
         self._mask = torch.zeros((self.num_envs, self.cfg.mask_length), device=self.device).bool()
         self._mask[:] = mask.create_mask(
-                                        mask_element_names=self.mask_element_names,
-                                        mask_modes=cfg.distill_mask_modes,
-                                        enable_sparsity_randomization=cfg.distill_mask_sparsity_randomization_enabled,
-                                        device=self.device,
-                                        num_envs=self.num_envs,
-                                        )
+            mask_element_names=self.mask_element_names,
+            mask_modes=cfg.distill_mask_modes,
+            enable_sparsity_randomization=cfg.distill_mask_sparsity_randomization_enabled,
+            device=self.device,
+            num_envs=self.num_envs,
+        )
 
         self.reset()
-
-    
 
     @property
     def robot(self):
@@ -285,10 +281,18 @@ class NeuralWBCEnv(EnvironmentWrapper):
             # Convert it to numpy and apply it to the simulator.
             processed_action_np = self._processed_action.detach().cpu().numpy()
             if self.cfg.robot == "unitree_g1":
-                self.robot._g1_sdk.reference_joint_pos = self.extras["data"]["ground_truth"]["joint_pos"].clone().squeeze(0).tolist()
-                self.robot._g1_sdk.reference_joint_vel = self.extras["data"]["ground_truth"]["joint_vel"].clone().squeeze(0).tolist()
-                self.robot._g1_sdk.reference_root_pos = self.extras["data"]["ground_truth"]["root_pos"].clone().squeeze(0).tolist()
-                self.robot._g1_sdk.reference_root_rot = self.extras["data"]["ground_truth"]["root_rot"].clone().squeeze(0).tolist()
+                self.robot._g1_sdk.reference_joint_pos = (
+                    self.extras["data"]["ground_truth"]["joint_pos"].clone().squeeze(0).tolist()
+                )
+                self.robot._g1_sdk.reference_joint_vel = (
+                    self.extras["data"]["ground_truth"]["joint_vel"].clone().squeeze(0).tolist()
+                )
+                self.robot._g1_sdk.reference_root_pos = (
+                    self.extras["data"]["ground_truth"]["root_pos"].clone().squeeze(0).tolist()
+                )
+                self.robot._g1_sdk.reference_root_rot = (
+                    self.extras["data"]["ground_truth"]["root_rot"].clone().squeeze(0).tolist()
+                )
             self.robot.step(processed_action_np)
 
         # Forward the current episode step buffer to keep track of current number of steps into the motion reference.
@@ -323,7 +327,9 @@ class NeuralWBCEnv(EnvironmentWrapper):
         if self.cfg.mode.is_distill_mode():
             obs_dic = self._compute_observations()
             self.history.update(obs_dic)
-            self.previous_body_state = self._compose_body_state(extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids)
+            self.previous_body_state = self._compose_body_state(
+                extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids
+            )
 
         # Action delay process
         if self.cfg.ctrl_delay_step_range[1] > 0:
@@ -357,8 +363,19 @@ class NeuralWBCEnv(EnvironmentWrapper):
         # reset history
         if self.cfg.mode.is_distill_mode():
             self.history.reset(env_ids=env_ids)
-        
-        self.previous_body_state = self._compose_body_state(extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids)
+
+        if self.cfg.reset_mask:
+            self._mask[:] = mask.create_mask(
+                mask_element_names=self.mask_element_names,
+                mask_modes=self.cfg.distill_mask_modes,
+                enable_sparsity_randomization=self.cfg.distill_mask_sparsity_randomization_enabled,
+                device=self.device,
+                num_envs=len(env_ids),
+            )
+
+        self.previous_body_state = self._compose_body_state(
+            extend_body_pos=self.extend_body_pos, extend_body_parent_ids=self.extend_body_parent_ids
+        )
         obs = self.get_observations()
         return obs, None
 
@@ -495,9 +512,12 @@ class NeuralWBCEnv(EnvironmentWrapper):
             # Compute extended body positions
             extend_curr_pos = (
                 torch_utils.my_quat_rotate(
-                    math_utils.convert_quat(self.robot.body_rotations[:, extend_body_parent_ids].reshape(-1, 4), to="xyzw"),
+                    math_utils.convert_quat(
+                        self.robot.body_rotations[:, extend_body_parent_ids].reshape(-1, 4), to="xyzw"
+                    ),
                     extend_body_pos[:,].reshape(-1, 3),
-                ).view(num_envs, -1, 3) + self.robot.body_positions[:, extend_body_parent_ids]
+                ).view(num_envs, -1, 3)
+                + self.robot.body_positions[:, extend_body_parent_ids]
             )
             body_state.body_pos_extend = torch.cat([body_state.body_pos, extend_curr_pos], dim=1)
 
@@ -545,7 +565,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
 
         self.extras["data"] = {
             "mask": self._mask.detach().clone(),
-            "recorded_state":{
+            "recorded_state": {
                 # "body_pos": self.previous_body_state.body_pos_extend.detach().clone(),
                 "joint_pos": self.previous_body_state.joint_pos.detach().clone(),
                 "joint_vel": self.previous_body_state.joint_vel.detach().clone(),
@@ -572,9 +592,9 @@ class NeuralWBCEnv(EnvironmentWrapper):
                 "root_lin_vel": ref_motion_state.root_lin_vel.detach().clone(),
             },
             "limits": {
-            "joint_torques_limit": self._effort_limit.detach().clone(),
-            "lower_pos_limit": self._lower_position_limit.detach().clone(),
-            "upper_pos_limit": self._upper_position_limit.detach().clone(),
+                "joint_torques_limit": self._effort_limit.detach().clone(),
+                "lower_pos_limit": self._lower_position_limit.detach().clone(),
+                "upper_pos_limit": self._upper_position_limit.detach().clone(),
             },
             "action": self.actions.detach().clone(),
             "upper_joint_ids": self.cfg.upper_body_joint_ids,
@@ -583,13 +603,17 @@ class NeuralWBCEnv(EnvironmentWrapper):
         try:
             self.extras["data"]["process_action"] = self._processed_action.detach().clone()
         except:
-            self.extras["data"]["process_action"] = torch.zeros((1, self.num_actions), dtype=torch.float32).detach().clone()
+            self.extras["data"]["process_action"] = (
+                torch.zeros((1, self.num_actions), dtype=torch.float32).detach().clone()
+            )
 
         base_gravity = self.robot.get_base_projected_gravity(self._base_name)
         # The angular velocity from the Unitree H1 IMU is already provided in the robot's local frame.
         # However, in MuJoCo, the angular velocity in the local frame must be computed using world frame mjc body data.
         local_base_ang_velocity = (
-            self.robot.get_base_angular_velocity(self._base_name) if (self.cfg.robot == "unitree_h1" or self.cfg.robot == "unitree_g1") else None
+            self.robot.get_base_angular_velocity(self._base_name)
+            if (self.cfg.robot == "unitree_h1" or self.cfg.robot == "unitree_g1")
+            else None
         )
         student_obs, student_obs_dict = compute_student_observations(
             base_id=self._base_id,
@@ -602,7 +626,7 @@ class NeuralWBCEnv(EnvironmentWrapper):
             mask=self._mask,
             local_base_ang_velocity=local_base_ang_velocity,
         )
-        
+
         obs_dict.update(student_obs_dict)
         obs_dict["student_policy"] = student_obs
         return obs_dict

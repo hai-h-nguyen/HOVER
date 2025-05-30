@@ -49,6 +49,7 @@ class NeuralWBCRewards:
         body_state_feet_ids: list,
         root_ids: int,
     ):
+        self._env = env
         self._num_envs = env.num_envs
         self._device = env.device
         self._cfg = reward_cfg
@@ -189,7 +190,7 @@ class NeuralWBCRewards:
         diff_vel = ref_body_vel - body_vel
         mean_diff_vel_squared = (diff_vel**2).mean(dim=-1).mean(dim=-1)
         return torch.exp(-mean_diff_vel_squared / self._cfg.body_vel_sigma)
-    
+
     def reward_track_body_velocities_extended(
         self,
         body_state: BodyState,
@@ -234,7 +235,7 @@ class NeuralWBCRewards:
         diff_ang_vel = ref_body_ang_vel - body_ang_vel
         mean_diff_ang_vel_squared = (diff_ang_vel**2).mean(dim=-1).mean(dim=-1)
         return torch.exp(-mean_diff_ang_vel_squared / self._cfg.body_ang_vel_sigma)
-    
+
     def reward_track_body_angular_velocities_extended(
         self,
         body_state: BodyState,
@@ -323,7 +324,9 @@ class NeuralWBCRewards:
 
         return torch.exp(-diff_body_pos_dist_vr_key_points / self._cfg.body_pos_vr_key_points_sigma)
 
-    def reward_track_body_position_feet(self, body_state: BodyState, recorded_body_state: BodyState, ref_motion_state: ReferenceMotionState, **kwargs):
+    def reward_track_body_position_feet(
+        self, body_state: BodyState, recorded_body_state: BodyState, ref_motion_state: ReferenceMotionState, **kwargs
+    ):
         body_pos_extend = body_state.body_pos_extend
         if recorded_body_state is not None:
             ref_body_pos_extend = recorded_body_state.body_pos_extend
@@ -358,7 +361,7 @@ class NeuralWBCRewards:
         diff_global_body_angle_dist = (diff_global_body_angle**2).mean(dim=-1)
 
         return torch.exp(-diff_global_body_angle_dist / self._cfg.body_rot_sigma)
-        
+
     def reward_track_body_rotation_extended(
         self,
         body_state: BodyState,
@@ -386,7 +389,7 @@ class NeuralWBCRewards:
         diff_global_body_angle_dist = (diff_global_body_angle**2).mean(dim=-1)
 
         return torch.exp(-diff_global_body_angle_dist / self._cfg.body_rot_sigma)
-    
+
     def penalize_torques(
         self,
         articulation_data: ArticulationData,
@@ -455,7 +458,7 @@ class NeuralWBCRewards:
     def penalize_action_changes(self, previous_actions: torch.Tensor, actions: torch.Tensor, **kwargs):
         # Penalize changes in actions
         return torch.sum(torch.square(previous_actions - actions), dim=1)
-        
+
     def penalize_action_norm(self, actions: torch.Tensor, **kwargs):
         return torch.exp(-torch.norm(actions, dim=1) - 1)
 
@@ -597,7 +600,7 @@ class NeuralWBCRewards:
             torch.sum(torch.square(left_gravity[:, :2]), dim=1) ** 0.5
             + torch.sum(torch.square(right_gravity[:, :2]), dim=1) ** 0.5
         )
-    
+
     def penalize_feet_heading_alignment(self, body_state: BodyState, **kwargs):
         left_quat = body_state.body_rot[:, self._body_state_feet_ids[0]]
         right_quat = body_state.body_rot[:, self._body_state_feet_ids[1]]
@@ -614,7 +617,7 @@ class NeuralWBCRewards:
 
         heading_diff_left = torch.abs(math_utils.wrap_to_pi(heading_left_feet - heading_root))
         heading_diff_right = torch.abs(math_utils.wrap_to_pi(heading_right_feet - heading_root))
-        
+
         return heading_diff_left + heading_diff_right
 
     def penalize_feet_air_time(self, ref_motion_state: ReferenceMotionState, **kwargs):
@@ -713,6 +716,7 @@ class NeuralWBCRewards:
         """
         return self.contact_sensor.compute_first_contact(self._dt)[:, self.contact_sensor_feet_ids]
 
+
 class NeuralWBCRewards_G1(NeuralWBCRewards):
     def __init__(self, env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids):
         super().__init__(env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids)
@@ -751,7 +755,7 @@ class NeuralWBCRewards_G1(NeuralWBCRewards):
             r_body_pos_lower * self._cfg.body_pos_lower_body_weight
             + r_body_pos_upper * self._cfg.body_pos_upper_body_weight
         )
-    
+
     def penalize_lower_body_action_changes(
         self,
         previous_actions: torch.Tensor,
@@ -785,7 +789,8 @@ class NeuralWBCRewards_G1(NeuralWBCRewards):
         """
         # Joints 15 - 22 are upper body joints in Isaac Gym.
         return torch.sum(torch.square(previous_actions[:, 15:] - actions[:, 15:]), dim=1)
-    
+
+
 class NeuralWBCRewards_H12(NeuralWBCRewards):
     def __init__(self, env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids):
         super().__init__(env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids)
@@ -820,7 +825,7 @@ class NeuralWBCRewards_H12(NeuralWBCRewards):
             r_body_pos_lower * self._cfg.body_pos_lower_body_weight
             + r_body_pos_upper * self._cfg.body_pos_upper_body_weight
         )
-    
+
     def penalize_lower_body_action_changes(
         self,
         previous_actions: torch.Tensor,
@@ -854,3 +859,293 @@ class NeuralWBCRewards_H12(NeuralWBCRewards):
         """
         # Joints 15 - 22 are upper body joints in Isaac Gym.
         return torch.sum(torch.square(previous_actions[:, 12:] - actions[:, 12:]), dim=1)
+
+
+class NeuralWBCRewards_H12_ALMI(NeuralWBCRewards):
+    def __init__(self, env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids):
+        super().__init__(env, reward_cfg, contact_sensor, contact_sensor_feet_ids, body_state_feet_ids, root_ids)
+
+    def compute_reward(
+        self,
+        articulation_data: ArticulationData,
+        body_state: BodyState,
+        previous_actions: torch.Tensor,
+        actions: torch.Tensor,
+        reset_buf: torch.Tensor,
+        timeout_buf: torch.Tensor,
+        penalty_scale: float,
+        processed_actions: torch.Tensor,
+        previous_joint_velocities: torch.Tensor,
+        commands: torch.Tensor,
+        leg_phases: torch.Tensor,
+    ) -> tuple[torch.Tensor, dict]:
+        """
+        Computes the total reward for the given environment and reference motion state.
+
+        This function calculates the weighted sum of individual rewards specified in the environment's
+        reward configuration. Each reward is computed using a corresponding reward function defined
+        within the class. The final reward is a sum of these individual rewards, each scaled by a
+        specified factor.
+
+        Returns:
+            tuple[torch.Tensor, dict]: A tuple containing:
+                - reward_sum (torch.Tensor): The total computed reward for all environments.
+                - rewards (dict): A dictionary with individual reward names as keys and their computed values as values.
+
+        Raises:
+            AttributeError: If a reward function corresponding to a reward name is not defined.
+        """
+        reward_sum = torch.zeros([self._num_envs], device=self._device)
+        rewards = {}
+        for reward_name, scale in self._cfg.scales.items():
+            try:
+                reward_fn = getattr(self, reward_name)
+            except AttributeError:
+                raise AttributeError(f"No reward or penalty function is defined for {reward_name}")
+
+            rewards[reward_name] = reward_fn(
+                body_state=body_state,
+                articulation_data=articulation_data,
+                previous_actions=previous_actions,
+                actions=actions,
+                reset_buf=reset_buf,
+                timeout_buf=timeout_buf,
+                processed_actions=processed_actions,
+                previous_joint_velocities=previous_joint_velocities,
+                commands=commands,
+                leg_phases=leg_phases,
+            )
+            if reward_name.startswith("penalize"):
+                rewards[reward_name] *= penalty_scale
+            reward_sum += rewards[reward_name] * scale * 0.02
+
+        return reward_sum, rewards
+
+    def penalize_lin_vel_z(
+        self,
+        body_state: BodyState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty on the linear velocity in the z direction.
+
+        This function is adapted from _reward_lin_vel_z in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        return torch.square(body_state.root_lin_vel[:, 2])
+
+    def penalize_ang_vel_xy(
+        self,
+        body_state: BodyState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty on the angular velocity in the xy direction.
+
+        This function is adapted from _reward_ang_vel_xy in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        return torch.sum(torch.square(body_state.root_ang_vel[:, :2]), dim=1)
+
+    def penalize_base_height(
+        self,
+        body_state: BodyState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty on the base height.
+
+        This function is adapted from _reward_base_height in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        base_height = body_state.root_pos[:, 2]
+        return torch.square(base_height - self._cfg.base_height_target)
+
+    def penalize_torques(self, processed_actions: torch.Tensor, **kwargs):
+        """
+        Computes the penalty on applied torques to minimize energy consumption.
+        This function is adapted from _reward_torques in legged_gym.
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        return torch.sum(torch.square(processed_actions[:, :12]), dim=1)
+
+    def penalize_joint_velocities(self, body_state: BodyState, **kwargs):
+        """
+        Computes the penalty on joint velocity of each motor.
+        This function is adapted from _reward_dof_vel in legged_gym.
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        return torch.sum(torch.square(body_state.joint_vel[:, :12]), dim=1)
+
+    def penalize_joint_accelerations(self, body_state: BodyState, previous_joint_velocities: torch.Tensor, **kwargs):
+        """
+        Computes the penalty on joint acceleration of each motor.
+
+        This function is adapted from _reward_dof_acc in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        return torch.sum(torch.square((previous_joint_velocities - body_state.joint_vel)[:, :12]), dim=1)
+
+    def penalize_by_joint_pos_limits(self, body_state, **kwargs):
+        """
+        Computes the penalty on actions that exceed the joint position limits defined in the configuration.
+
+        This function is adapted from _reward_dof_pos_limits in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        joint_pos = body_state.joint_pos
+        out_of_bounds = -(joint_pos - self._joint_pos_limits[:, 0]).clip(max=0.0)
+        out_of_bounds += (joint_pos - self._joint_pos_limits[:, 1]).clip(min=0.0)
+        return torch.sum(out_of_bounds[:, :12], dim=1)
+
+    def reward_track_lin_vel(self, body_state: BodyState, commands: torch.Tensor, **kwargs):
+        """
+        Computes a reward based on the difference between the body's linear velocity and the reference motion's linear velocity.
+
+        This function is adapted from _reward_track_lin_vel in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        diff_global_body_lin_vel = torch.sum(torch.square(commands[:, :2] - body_state.root_lin_vel[:, :2]), dim=1)
+
+        return torch.exp(-diff_global_body_lin_vel / self._cfg.lin_vel_sigma)
+
+    def reward_track_ang_vel(self, body_state: BodyState, commands: torch.Tensor, **kwargs):
+        """
+        Computes a reward based on the difference between the body's angular velocity and the reference motion's angular velocity.
+
+        This function is adapted from _reward_track_ang_vel in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed reward for each environment.
+        """
+        diff_global_body_ang_vel = torch.square(commands[:, 2] - body_state.root_ang_vel[:, 2])
+
+        return torch.exp(-diff_global_body_ang_vel / self._cfg.ang_vel_sigma)
+
+    def penalize_feet_air_time(self, commands: torch.Tensor, **kwargs):
+        """
+        Computes the penalty for the time that the feet are in the air before the newest contact with the terrain.
+
+        This function is adapted from _reward_feet_air_time_teleop in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        first_contact = self._get_feet_first_contact()
+        last_feet_air_time = self._get_last_air_time_for_feet()
+        reward = torch.sum(
+            (last_feet_air_time - 0.5) * first_contact, dim=1
+        )  # reward only on first contact with the ground
+        reward *= torch.norm(commands[:, :3], dim=1) > 0.1  # no reward for low ref motion velocity (root xy velocity)
+        return reward
+
+    def reward_contact(self, leg_phases: torch.Tensor, **kwargs):
+        res = torch.zeros(self._num_envs, dtype=torch.float, device=self._device)
+        contact_forces = self._get_feet_contact_forces()
+        for i in range(2):
+            is_stance = leg_phases[:, i] < 0.55
+            contact = contact_forces[:, i, 2] > 1
+            res += ~(contact ^ is_stance)
+        return res
+
+    def penalize_feet_swing_height(self, body_state: BodyState, **kwargs):
+        """
+        Computes the penalty based on the height of the feet during the swing phase.
+
+        This function is adapted from _reward_feet_swing_height in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        feet_in_air = self._get_feet_in_the_air()
+        target_feet_height = self._cfg.feet_swing_height_threshold
+        feet_height = body_state.body_pos[:, self._body_state_feet_ids, 2]
+        pos_error = torch.square(feet_height - target_feet_height) * feet_in_air
+        return torch.sum(pos_error, dim=(1))
+
+    def reward_alive(self, **kwargs):
+        return 1.0
+
+    def penalize_contact_no_vel(self, body_state: BodyState, **kwargs):
+        # Penalize contact with no velocity
+        contact_forces = self._get_feet_contact_forces()
+        contact = torch.norm(contact_forces, dim=-1) > 1.0
+        feet_vel = body_state.body_lin_vel[:, self._body_state_feet_ids]
+        contact_feet_vel = feet_vel * contact.unsqueeze(-1)
+        penalize = torch.square(contact_feet_vel[:, :, :3])
+        return torch.sum(penalize, dim=(1, 2))
+
+    def penalize_hip_position(
+        self,
+        body_state: BodyState,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Computes the penalty on the hip position.
+
+        This function is adapted from _reward_hip_position in legged_gym.
+
+        Returns:
+            torch.Tensor: A float tensor of shape (num_envs) representing the computed penalty for each environment.
+        """
+        hip_pos = body_state.joint_pos[:, [0, 2, 6, 8]]
+        return torch.sum(torch.square(hip_pos), dim=1)
+
+    def reward_feet_distance(self, body_state: BodyState, **kwargs) -> torch.Tensor:
+        """
+        Calculates the reward based on the distance between the feet. Penalize feet get close to each other or too far away.
+        """
+        feet_pos = body_state.body_pos[:, self._body_state_feet_ids, :2]
+        feet_dist = torch.norm(feet_pos[:, 0, :] - feet_pos[:, 1, :], dim=1)
+        fd = self._cfg.min_dist
+        max_df = self._cfg.max_dist
+        d_min = torch.clamp(feet_dist - fd, -0.5, 0.0)
+        d_max = torch.clamp(feet_dist - max_df, 0.0, 0.5)
+        return (torch.exp(-torch.abs(d_min) * 100) + torch.exp(-torch.abs(d_max) * 100)) / 2
+
+    def reward_knee_distance(self, body_state: BodyState, **kwargs) -> torch.Tensor:
+        """
+        Calculates the reward based on the distance between the knee of the humanoid.
+        """
+        knee_pos = body_state.body_pos[:, [4, 10], :2]
+        knee_dist = torch.norm(knee_pos[:, 0, :] - knee_pos[:, 1, :], dim=1)
+        fd = self._cfg.min_dist
+        max_df = self._cfg.max_dist / 2
+        d_min = torch.clamp(knee_dist - fd, -0.5, 0.0)
+        d_max = torch.clamp(knee_dist - max_df, 0, 0.5)
+        return (torch.exp(-torch.abs(d_min) * 100) + torch.exp(-torch.abs(d_max) * 100)) / 2
+
+    def penalize_stand_still(self, body_state: BodyState, commands: torch.Tensor, **kwargs) -> torch.Tensor:
+        return torch.sum(torch.abs(body_state.joint_pos[:, :12] - self._env.default_joint_pos[:12]), dim=1) * (
+            torch.norm(commands[:, :3], dim=1) < 0.1
+        )
+
+    def penalize_ankle_torque(self, processed_actions: torch.Tensor, **kwargs) -> torch.Tensor:
+        # Penalize ankle torques
+        return torch.sum(torch.square(processed_actions[:, [4, 5, 10, 11]]), dim=1)
+
+    def penalize_ankle_action_rate(
+        self, previous_actions: torch.Tensor, actions: torch.Tensor, **kwargs
+    ) -> torch.Tensor:
+        # Penalize changes in actions
+        return torch.sum(torch.square(previous_actions[:, [4, 5, 10, 11]] - actions[:, [4, 5, 10, 11]]), dim=1)
+
+    def penalize_stance_base_vel(self, body_state: BodyState, commands: torch.Tensor, **kwargs) -> torch.Tensor:
+        # Penalize base velocity when stance
+        return torch.sum(torch.square(body_state.root_lin_vel[:, :2]), dim=1) * (
+            torch.norm(commands[:, :3], dim=1) < 0.1
+        )

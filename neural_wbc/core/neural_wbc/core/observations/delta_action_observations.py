@@ -20,9 +20,9 @@ import phc.utils.torch_utils as torch_utils
 
 from neural_wbc.core import math_utils
 
-from .student_observations import compute_distilled_robot_state_observation, compute_distilled_imitation_observations
 from ..body_state import BodyState
 from ..reference_motion import ReferenceMotionState
+from .student_observations import compute_distilled_imitation_observations, compute_distilled_robot_state_observation
 
 
 def compute_delta_action_observations(
@@ -55,11 +55,10 @@ def compute_delta_action_observations(
         "distilled_historical_info": history,
         "recorded_actions": recorded_actions,
     }
-    
+
     obs = torch.cat(
         [tensor for tensor in obs_dict.values()],
         dim=-1,
     )
 
     return obs, obs_dict
-

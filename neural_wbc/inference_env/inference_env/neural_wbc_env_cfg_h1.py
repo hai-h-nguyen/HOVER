@@ -22,10 +22,16 @@ from inference_env.neural_wbc_env_cfg import NeuralWBCEnvCfg
 from neural_wbc.core.mask import calculate_mask_length
 from neural_wbc.data import get_data_path
 
-
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder_roll_link.*", ".*elbow.*link.*", ".*hand.*link", ".*torso_joint.*", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [
+            ".*shoulder_roll_link.*",
+            ".*elbow.*link.*",
+            ".*hand.*link",
+            ".*torso_joint.*",
+            ".*shoulder.*joint.*",
+            ".*elbow.*joint.*",
+        ],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -55,10 +61,10 @@ class NeuralWBCEnvCfgH1(NeuralWBCEnvCfg):
     ctrl_delay_step_range = [2, 2]
     default_rfi_lim = 0
     robot = "mujoco_robot"
-    
+
     body_names = None
     joint_names = None
-    
+
     distill_mask_sparsity_randomization_enabled = False
     distill_mask_modes = {"h2o": DISTILL_MASK_MODES_ALL["h2o"]}
 

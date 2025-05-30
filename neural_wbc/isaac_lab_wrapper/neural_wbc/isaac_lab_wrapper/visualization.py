@@ -72,7 +72,7 @@ class RefMotionVisualizer:
                 scale=(0.05, 0.05, 0.25),
                 visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 1.0)),
             ),
-            }
+        }
         self.root_markers = VisualizationMarkers(root_marker_cfg)
         self.root_markers.set_visibility(True)
 
@@ -98,7 +98,9 @@ class RefMotionVisualizer:
             active_body_pos = ref_motion.body_pos_extend.view(-1, 3)[mask_keypoints_flat, :]
             inactive_body_pos = ref_motion.body_pos_extend.view(-1, 3)[~mask_keypoints_flat, :]
 
-            mask_joint_angles = torch.cat([torch.zeros((mask.shape[0], 1), device=mask.device).to(bool), mask[:, num_bodies:-7]], dim=1)
+            mask_joint_angles = torch.cat(
+                [torch.zeros((mask.shape[0], 1), device=mask.device).to(bool), mask[:, num_bodies:-7]], dim=1
+            )
 
             mask_joint_angles_flat = mask_joint_angles.flatten()
             active_joint_angle_pos = ref_motion.body_pos.view(-1, 3)[mask_joint_angles_flat, :]

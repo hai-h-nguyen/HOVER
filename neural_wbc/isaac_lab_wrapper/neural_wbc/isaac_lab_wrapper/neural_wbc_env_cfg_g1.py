@@ -29,12 +29,18 @@ from isaaclab.utils import configclass
 
 from .events import NeuralWBCPlayEventCfg, NeuralWBCTrainEventCfg
 from .neural_wbc_env_cfg import NeuralWBCEnvCfg
-from .terrain import HARD_ROUGH_TERRAINS_CFG, flat_terrain
 from .rewards import NeuralWBCRewardCfg_G1, NeuralWBCRewardCfg_G1_4_DeltaAction
+from .terrain import HARD_ROUGH_TERRAINS_CFG, flat_terrain
 
 DISTILL_MASK_MODES_ALL = {
     "exbody": {
-        "upper_body": [".*shoulder.*link.*", ".*elbow.*link.*", ".*hand.*link", ".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "upper_body": [
+            ".*shoulder.*link.*",
+            ".*elbow.*link.*",
+            ".*hand.*link",
+            ".*shoulder.*joint.*",
+            ".*elbow.*joint.*",
+        ],
         "lower_body": ["root.*"],
     },
     "humanplus": {
@@ -52,10 +58,20 @@ DISTILL_MASK_MODES_ALL = {
     "omnih2o": {
         "upper_body": [".*hand.*link.*", ".*head.*link.*"],
     },
-    "vr": {
+    "cus0": {
         "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
         "lower_body": ["waist.*joint.*", "root_linear_velocity.*"],
-    }
+    },
+    "cus1": {
+        "upper_body": [".*shoulder.*joint.*", ".*elbow.*joint.*"],
+        "lower_body": [
+            "waist.*joint.*",
+            ".*hip.*joint.*",
+            ".*knee.*joint.*",
+            ".*ankle.*joint.*",
+            "root_linear_velocity.*",
+        ],
+    },
 }
 
 # If one is enabled, other will also be enabled
@@ -88,40 +104,44 @@ G1_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.8),
         joint_pos={
-                    "left_hip_pitch_joint": -0.1,
-                    "left_hip_roll_joint": 0.,
-                    "left_hip_yaw_joint": 0.,
-                    "left_knee_joint": 0.3,
-                    "left_ankle_pitch_joint": -0.2,
-                    "left_ankle_roll_joint": 0.,
-
-                    "right_hip_pitch_joint": -0.1,
-                    "right_hip_roll_joint": 0.,
-                    "right_hip_yaw_joint": 0.,
-                    "right_knee_joint": 0.3,
-                    "right_ankle_pitch_joint": -0.2,
-                    "right_ankle_roll_joint": 0.,
-                    
-                    "waist_yaw_joint" : 0.,
-                    "waist_roll_joint" : 0.,
-                    "waist_pitch_joint" : 0.,
-                    
-                    "left_shoulder_pitch_joint": 0.,
-                    "left_shoulder_roll_joint": 0.,
-                    "left_shoulder_yaw_joint": 0.,
-                    "left_elbow_joint": 0.,
-                    
-                    "right_shoulder_pitch_joint": 0.,
-                    "right_shoulder_roll_joint": 0.,
-                    "right_shoulder_yaw_joint": 0.,
-                    "right_elbow_joint": 0.,
+            "left_hip_pitch_joint": -0.1,
+            "left_hip_roll_joint": 0.0,
+            "left_hip_yaw_joint": 0.0,
+            "left_knee_joint": 0.3,
+            "left_ankle_pitch_joint": -0.2,
+            "left_ankle_roll_joint": 0.0,
+            "right_hip_pitch_joint": -0.1,
+            "right_hip_roll_joint": 0.0,
+            "right_hip_yaw_joint": 0.0,
+            "right_knee_joint": 0.3,
+            "right_ankle_pitch_joint": -0.2,
+            "right_ankle_roll_joint": 0.0,
+            "waist_yaw_joint": 0.0,
+            "waist_roll_joint": 0.0,
+            "waist_pitch_joint": 0.0,
+            "left_shoulder_pitch_joint": 0.0,
+            "left_shoulder_roll_joint": 0.0,
+            "left_shoulder_yaw_joint": 0.0,
+            "left_elbow_joint": 0.0,
+            "right_shoulder_pitch_joint": 0.0,
+            "right_shoulder_roll_joint": 0.0,
+            "right_shoulder_yaw_joint": 0.0,
+            "right_elbow_joint": 0.0,
         },
         joint_vel={".*": 0.0},
     ),
     soft_joint_pos_limit_factor=0.9,
-    actuators = {
+    actuators={
         "legs": IdealPDActuatorCfg(
-            joint_names_expr=[".*_hip_yaw_joint", ".*_hip_roll_joint", ".*_hip_pitch_joint", ".*_knee_joint", "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint"],
+            joint_names_expr=[
+                ".*_hip_yaw_joint",
+                ".*_hip_roll_joint",
+                ".*_hip_pitch_joint",
+                ".*_knee_joint",
+                "waist_yaw_joint",
+                "waist_roll_joint",
+                "waist_pitch_joint",
+            ],
             effort_limit={
                 ".*_hip_yaw_joint": 88.0,
                 ".*_hip_roll_joint": 88.0,
@@ -158,7 +178,12 @@ G1_CFG = ArticulationCfg(
             friction=0.01,
         ),
         "arms": IdealPDActuatorCfg(
-            joint_names_expr=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", ".*_elbow_joint"],
+            joint_names_expr=[
+                ".*_shoulder_pitch_joint",
+                ".*_shoulder_roll_joint",
+                ".*_shoulder_yaw_joint",
+                ".*_elbow_joint",
+            ],
             effort_limit={
                 ".*_shoulder_pitch_joint": 25.0,
                 ".*_shoulder_roll_joint": 25.0,
@@ -176,7 +201,7 @@ G1_CFG = ArticulationCfg(
             armature=0.01,
             friction=0.01,
         ),
-    }
+    },
 )
 
 
@@ -196,48 +221,52 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # OH2O mode is tracking the head and hand positions. This can be modified to train a different specialist
     # or use the full DISTILL_MASK_MODES_ALL to train a generalist policy.
     distill_mask_sparsity_randomization_enabled = False
-    distill_mask_modes = {"omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"], 
-                          "h2o": DISTILL_MASK_MODES_ALL["h2o"], 
-                          "exbody": DISTILL_MASK_MODES_ALL["exbody"], 
-                          "humanplus": DISTILL_MASK_MODES_ALL["humanplus"],
-                           "vr": DISTILL_MASK_MODES_ALL["vr"],
-                          }
+    distill_mask_modes = {
+        "omnih2o": DISTILL_MASK_MODES_ALL["omnih2o"],
+        "h2o": DISTILL_MASK_MODES_ALL["h2o"],
+        "exbody": DISTILL_MASK_MODES_ALL["exbody"],
+        "humanplus": DISTILL_MASK_MODES_ALL["humanplus"],
+        "cus0": DISTILL_MASK_MODES_ALL["cus0"],
+        "cus1": DISTILL_MASK_MODES_ALL["cus1"],
+    }
     # distill_mask_modes = {"humanplus": DISTILL_MASK_MODES_ALL["humanplus"]}
 
-    enforced_mask_modes = {"left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
-                           "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
-                           "left_shoulder_joint": ENFORCED_TOGETHERNESS["left_shoulder_joint"],
-                           "right_shoulder_joint": ENFORCED_TOGETHERNESS["right_shoulder_joint"],
-                           "root_velocity": ENFORCED_TOGETHERNESS["root_velocity"],
-                           "root_orientation": ENFORCED_TOGETHERNESS["root_orientation"]}
+    enforced_mask_modes = {
+        "left_shoulder_link": ENFORCED_TOGETHERNESS["left_shoulder_link"],
+        "right_shoulder_link": ENFORCED_TOGETHERNESS["right_shoulder_link"],
+        "left_shoulder_joint": ENFORCED_TOGETHERNESS["left_shoulder_joint"],
+        "right_shoulder_joint": ENFORCED_TOGETHERNESS["right_shoulder_joint"],
+        "root_velocity": ENFORCED_TOGETHERNESS["root_velocity"],
+        "root_orientation": ENFORCED_TOGETHERNESS["root_orientation"],
+    }
 
     robot: ArticulationCfg = G1_CFG.replace(prim_path="/World/envs/env_.*/Robot")
 
     body_names = [
-                  'pelvis',
-                  'left_hip_pitch_link',
-                  'left_hip_roll_link',
-                  'left_hip_yaw_link',
-                  'left_knee_link',
-                  'left_ankle_pitch_link',
-                  'left_ankle_roll_link',
-                  'right_hip_pitch_link',
-                  'right_hip_roll_link',
-                  'right_hip_yaw_link',
-                  'right_knee_link',
-                  'right_ankle_pitch_link',
-                  'right_ankle_roll_link',
-                  'waist_yaw_link',
-                  'waist_roll_link',
-                  'torso_link',
-                  'left_shoulder_pitch_link',
-                  'left_shoulder_roll_link',
-                  'left_shoulder_yaw_link',
-                  'left_elbow_link',
-                  'right_shoulder_pitch_link',
-                  'right_shoulder_roll_link',
-                  'right_shoulder_yaw_link',
-                  'right_elbow_link',
+        "pelvis",
+        "left_hip_pitch_link",
+        "left_hip_roll_link",
+        "left_hip_yaw_link",
+        "left_knee_link",
+        "left_ankle_pitch_link",
+        "left_ankle_roll_link",
+        "right_hip_pitch_link",
+        "right_hip_roll_link",
+        "right_hip_yaw_link",
+        "right_knee_link",
+        "right_ankle_pitch_link",
+        "right_ankle_roll_link",
+        "waist_yaw_link",
+        "waist_roll_link",
+        "torso_link",
+        "left_shoulder_pitch_link",
+        "left_shoulder_roll_link",
+        "left_shoulder_yaw_link",
+        "left_elbow_link",
+        "right_shoulder_pitch_link",
+        "right_shoulder_roll_link",
+        "right_shoulder_yaw_link",
+        "right_elbow_link",
     ]
 
     # Joint names by the order in the MJCF model.
@@ -283,34 +312,34 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
     # These are the bodies that are tracked by the teacher. They may also contain the extended
     # bodies.
     tracked_body_names = [
-                            'pelvis',
-                            'left_hip_pitch_link',
-                            'left_hip_roll_link',
-                            'left_hip_yaw_link',
-                            'left_knee_link',
-                            'left_ankle_pitch_link',
-                            'left_ankle_roll_link',
-                            'right_hip_pitch_link',
-                            'right_hip_roll_link',
-                            'right_hip_yaw_link',
-                            'right_knee_link',
-                            'right_ankle_pitch_link',
-                            'right_ankle_roll_link',
-                            'waist_yaw_link',
-                            'waist_roll_link',
-                            'torso_link',
-                            'left_shoulder_pitch_link',
-                            'left_shoulder_roll_link',
-                            'left_shoulder_yaw_link',
-                            'left_elbow_link',
-                            'right_shoulder_pitch_link',
-                            'right_shoulder_roll_link',
-                            'right_shoulder_yaw_link',
-                            'right_elbow_link',
-                            'left_hand_link',
-                            'right_hand_link',
-                            'head_link',
-                        ]
+        "pelvis",
+        "left_hip_pitch_link",
+        "left_hip_roll_link",
+        "left_hip_yaw_link",
+        "left_knee_link",
+        "left_ankle_pitch_link",
+        "left_ankle_roll_link",
+        "right_hip_pitch_link",
+        "right_hip_roll_link",
+        "right_hip_yaw_link",
+        "right_knee_link",
+        "right_ankle_pitch_link",
+        "right_ankle_roll_link",
+        "waist_yaw_link",
+        "waist_roll_link",
+        "torso_link",
+        "left_shoulder_pitch_link",
+        "left_shoulder_roll_link",
+        "left_shoulder_yaw_link",
+        "left_elbow_link",
+        "right_shoulder_pitch_link",
+        "right_shoulder_roll_link",
+        "right_shoulder_yaw_link",
+        "right_elbow_link",
+        "left_hand_link",
+        "right_hand_link",
+        "head_link",
+    ]
 
     # control parameters
     stiffness = {
@@ -320,27 +349,23 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_knee_joint": 200.0,
         "left_ankle_pitch_joint": 20.0,
         "left_ankle_roll_joint": 20.0,
-
         "right_hip_pitch_joint": 100.0,
         "right_hip_roll_joint": 100.0,
         "right_hip_yaw_joint": 100.0,
         "right_knee_joint": 200.0,
         "right_ankle_pitch_joint": 20.0,
         "right_ankle_roll_joint": 20.0,
-
         "waist_yaw_joint": 120,
         "waist_roll_joint": 120,
         "waist_pitch_joint": 120,
-
         "left_shoulder_pitch_joint": 40.0,
         "left_shoulder_roll_joint": 40.0,
         "left_shoulder_yaw_joint": 40.0,
         "left_elbow_joint": 60.0,
-
         "right_shoulder_pitch_joint": 40.0,
         "right_shoulder_roll_joint": 40.0,
         "right_shoulder_yaw_joint": 40.0,
-        "right_elbow_joint": 60.0, 
+        "right_elbow_joint": 60.0,
     }
 
     damping = {
@@ -350,23 +375,19 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "left_knee_joint": 5.0,
         "left_ankle_pitch_joint": 0.2,
         "left_ankle_roll_joint": 0.1,
-
         "right_hip_pitch_joint": 2.5,
         "right_hip_roll_joint": 2.5,
         "right_hip_yaw_joint": 2.5,
         "right_knee_joint": 5.0,
         "right_ankle_pitch_joint": 0.2,
         "right_ankle_roll_joint": 0.1,
-
         "waist_yaw_joint": 3.0,
         "waist_roll_joint": 3.0,
         "waist_pitch_joint": 3.0,
-
         "left_shoulder_pitch_joint": 1.0,
         "left_shoulder_roll_joint": 1.0,
         "left_shoulder_yaw_joint": 1.0,
         "left_elbow_joint": 1.5,
-
         "right_shoulder_pitch_joint": 1.0,
         "right_shoulder_roll_joint": 1.0,
         "right_shoulder_yaw_joint": 1.0,
@@ -382,24 +403,24 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         "right_hip_yaw_link",
         "right_hip_roll_link",
         "right_hip_pitch_link",
-        "right_knee_link"
+        "right_knee_link",
     ]
 
     undesired_contact_body_names = [
-                  'pelvis',
-                  'left_hip_pitch_link',
-                  'left_hip_roll_link',
-                  'left_hip_yaw_link',
-                  'right_hip_pitch_link',
-                  'right_hip_roll_link',
-                  'right_hip_yaw_link',
-                  'left_shoulder_pitch_link',
-                  'left_shoulder_roll_link',
-                  'left_shoulder_yaw_link',
-                  'right_shoulder_pitch_link',
-                  'right_shoulder_roll_link',
-                  'right_shoulder_yaw_link',
-                ]
+        "pelvis",
+        "left_hip_pitch_link",
+        "left_hip_roll_link",
+        "left_hip_yaw_link",
+        "right_hip_pitch_link",
+        "right_hip_roll_link",
+        "right_hip_yaw_link",
+        "left_shoulder_pitch_link",
+        "left_shoulder_roll_link",
+        "left_shoulder_yaw_link",
+        "right_shoulder_pitch_link",
+        "right_shoulder_roll_link",
+        "right_shoulder_yaw_link",
+    ]
 
     # Add a height scanner to the torso to detect the height of the terrain mesh
     height_scanner = RayCasterCfg(
@@ -412,26 +433,28 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
         mesh_prim_paths=["/World/ground"],
     )
 
-    rewards=NeuralWBCRewardCfg_G1()
+    rewards = NeuralWBCRewardCfg_G1()
 
     def __post_init__(self):
         super().__post_init__()
 
         self.reference_motion_manager.robot_name = "g1"
         self.reference_motion_manager.motion_path = get_data_path("motions/g1_test.pkl")
-        self.reference_motion_manager.skeleton_path = get_data_path("motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml")
+        self.reference_motion_manager.skeleton_path = get_data_path(
+            "motion_lib/g1_29dof_anneal_23dof_fitmotionONLY.xml"
+        )
 
         if self.terrain.terrain_generator == HARD_ROUGH_TERRAINS_CFG:
             self.events.update_curriculum.params["penalty_level_up_threshold"] = 125
 
         if self.mode == NeuralWBCModes.TRAIN:
             self.episode_length_s = 20.0
-            self.max_ref_motion_dist = 0.3
+            self.max_ref_motion_dist = 0.25
             self.events = NeuralWBCTrainEventCfg()
             self.events.reset_robot_rigid_body_mass.params["asset_cfg"].body_names = self.mass_randomized_body_names
             self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
         elif self.mode == NeuralWBCModes.DISTILL:
-            self.max_ref_motion_dist = 0.3
+            self.max_ref_motion_dist = 0.25
             self.events = NeuralWBCTrainEventCfg()
             self.events.reset_robot_rigid_body_mass.params["asset_cfg"].body_names = self.mass_randomized_body_names
             self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
@@ -454,7 +477,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
             self.events.reset_robot_base_com.params["asset_cfg"].body_names = "torso_link"
             self.add_policy_obs_noise = False
             self.reset_mask = False
-            self.resample_motions_for_envs_interval_s = 100 
+            self.resample_motions_for_envs_interval_s = 100
             self.rewards = NeuralWBCRewardCfg_G1_4_DeltaAction()
             self.recorded_data_path = "/home/rtx4/HOVER/test.h5"
 
@@ -462,7 +485,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
             self.terrain = flat_terrain
             self.events = NeuralWBCPlayEventCfg()
             self.ctrl_delay_step_range = (2, 2)
-            self.max_ref_motion_dist = 0.1
+            self.max_ref_motion_dist = 0.25
             self.add_policy_obs_noise = False
             self.resample_motions = False
             # self.distill_mask_sparsity_randomization_enabled = False
@@ -472,7 +495,7 @@ class NeuralWBCEnvCfgG1(NeuralWBCEnvCfg):
             self.events = NeuralWBCPlayEventCfg()
             self.distill_teleop_selected_keypoints_names = []
             self.ctrl_delay_step_range = (2, 2)
-            self.max_ref_motion_dist = 0.3
+            self.max_ref_motion_dist = 0.25
             self.default_rfi_lim = 0.0
             self.add_policy_obs_noise = False
             self.resample_motions = False

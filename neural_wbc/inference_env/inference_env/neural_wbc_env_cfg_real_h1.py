@@ -37,7 +37,7 @@ class NeuralWBCEnvCfgRealH1(NeuralWBCEnvCfg):
 
     extend_body_parent_names = ["left_elbow_link", "right_elbow_link", "pelvis"]
     extend_body_names = ["left_hand_link", "right_hand_link", "head_link"]
-    extend_body_pos = torch.tensor([[0.3, 0., 0.], [0.3, 0., 0.], [0., 0., 0.75]])
+    extend_body_pos = torch.tensor([[0.3, 0.0, 0.0], [0.3, 0.0, 0.0], [0.0, 0.0, 0.75]])
 
     tracked_body_names = [
         "left_hand_link",

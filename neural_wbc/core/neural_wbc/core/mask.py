@@ -75,6 +75,14 @@ def create_mask(
     # Random select mode for each environment
     # Shape:1 x num_envs
     selected_mode_indices = torch.randint(0, len(modes), (num_envs,), device=device)
+    if num_envs == 1:
+        count = 0
+        for k in mask_modes.keys():
+            if count == selected_mode_indices[0]:
+                print(f"Selected mode: {k}")
+                print("=" * 100)
+                break
+            count += 1
 
     for mode_idx, mode in enumerate(modes):
         # Using tensor operations for boolean selection

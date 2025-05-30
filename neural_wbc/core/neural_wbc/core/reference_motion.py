@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import List
 
 # TODO: Replace MotionLibH1 with the agnostic version when it's ready.
-from phc.utils.motion_lib_h1 import MotionLibH1, MotionLibG1, MotionLibH12
+from phc.utils.motion_lib_h1 import MotionLibG1, MotionLibH1, MotionLibH12
 from smpl_sim.poselib.skeleton.skeleton3d import SkeletonTree
 
 
@@ -180,7 +180,7 @@ class ReferenceMotionManager:
         self._motion_lib.load_motions(random_sample=random_sample, start_idx=start_idx)
         self._motion_len = self._motion_lib.get_motion_length(self._motion_ids)
         self.reset_motion_start_times(env_ids=self._motion_ids, sample=False)
-        
+
     def load_motions_with_ids(self, sample_idxes: torch.Tensor):
         """Loads motions from the motion dataset with  ids."""
         self._motion_lib.load_motions(sample_idxes=sample_idxes)
@@ -213,7 +213,7 @@ class ReferenceMotionManager:
 
         motion_times = episode_length_buf * self._dt + self._motion_start_times
         motion_res = self._motion_lib.get_motion_state(self._motion_ids, motion_times, offset=offset)
-        
+
         if terrain_heights is not None:
             delta_height = terrain_heights.clone()
             if offset is not None:

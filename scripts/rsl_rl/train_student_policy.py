@@ -40,7 +40,9 @@ parser.add_argument("--num_envs", type=int, default=None, help="Number of enviro
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment.")
 parser.add_argument("--reference_motion_path", type=str, default=None, help="Path to the reference motion dataset.")
 parser.add_argument("--output_dir", type=str, default="logs", help="Directory to store the training output.")
-parser.add_argument("--robot", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment")
+parser.add_argument(
+    "--robot", type=str, choices=["h1", "h12", "g1", "gr1"], default="h1", help="Robot used in environment"
+)
 parser.add_argument(
     f"--{student_policy_args_prefix}root_path",
     type=str,
@@ -74,9 +76,9 @@ from vecenv_wrapper import RslRlNeuralWBCVecEnvWrapper
 
 from neural_wbc.core.modes import NeuralWBCModes
 from neural_wbc.isaac_lab_wrapper.neural_wbc_env import NeuralWBCEnv
+from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_h1 import NeuralWBCEnvCfgH1
 from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_h12 import NeuralWBCEnvCfgH12
-from neural_wbc.isaac_lab_wrapper.neural_wbc_env_cfg_g1 import NeuralWBCEnvCfgG1
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True

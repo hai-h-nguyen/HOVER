@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 
+
 class Transformer_Block(nn.Module):
     def __init__(self, latent_dim, num_head, dropout_rate) -> None:
         super().__init__()
@@ -32,17 +33,20 @@ class Transformer_Block(nn.Module):
             nn.Linear(4 * latent_dim, latent_dim),
             nn.Dropout(dropout_rate),
         )
-    
+
     def forward(self, x):
         x = self.ln_1(x)
         x = x + self.attn(x, x, x, need_weights=False)[0]
         x = self.ln_2(x)
         x = x + self.mlp(x)
-        
+
         return x
 
+
 class Transformer(nn.Module):
-    def __init__(self, input_dim, output_dim, context_len, latent_dim=128, num_head=4, num_layer=4, dropout_rate=0.1) -> None:
+    def __init__(
+        self, input_dim, output_dim, context_len, latent_dim=128, num_head=4, num_layer=4, dropout_rate=0.1
+    ) -> None:
         super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -62,7 +66,7 @@ class Transformer(nn.Module):
             nn.LayerNorm(latent_dim),
             nn.Linear(latent_dim, output_dim),
         )
-    
+
     def forward(self, x):
         x = self.input_layer(x)
         x = x + self.weight_pos_embed(torch.arange(x.shape[1], device=x.device))
@@ -74,8 +78,19 @@ class Transformer(nn.Module):
 
         return x
 
+
 class StudentTransformer(nn.Module):
-    def __init__(self, input_dim, output_dim, context_len, distilled_imitation_dim=168, latent_dim=128,num_head=4, num_layer=4, dropout_rate=0.1):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        context_len,
+        distilled_imitation_dim=168,
+        latent_dim=128,
+        num_head=4,
+        num_layer=4,
+        dropout_rate=0.1,
+    ):
         super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -86,12 +101,13 @@ class StudentTransformer(nn.Module):
         self.num_layer = num_layer
         self.dropout_rate = dropout_rate
 
-        self.single_len = int((input_dim - distilled_imitation_dim) / (context_len+1))
+        self.single_len = int((input_dim - distilled_imitation_dim) / (context_len + 1))
         # Transformer model for distilled imitation learning
-        self.transformer = Transformer(self.single_len, output_dim, context_len+2, latent_dim, num_head, num_layer, dropout_rate)
-        self.input_layer = nn.Sequential(nn.Linear(distilled_imitation_dim, self.single_len),
-                                         nn.Dropout(dropout_rate))
-        
+        self.transformer = Transformer(
+            self.single_len, output_dim, context_len + 2, latent_dim, num_head, num_layer, dropout_rate
+        )
+        self.input_layer = nn.Sequential(nn.Linear(distilled_imitation_dim, self.single_len), nn.Dropout(dropout_rate))
+
     def forward(self, x):
         # Indices for slicing
         robot_state_end = self.single_len - self.output_dim
@@ -117,14 +133,16 @@ class StudentTransformer(nn.Module):
         # Pass through transformer
         return self.transformer(x)
 
+
 class StudentPolicy(nn.Module):
-    def __init__(self, 
-                 num_obs, 
-                 num_actions, 
-                 policy_hidden_dims=[256, 256, 256], 
-                 activation="elu", 
-                 noise_std=0.001,
-                ):
+    def __init__(
+        self,
+        num_obs,
+        num_actions,
+        policy_hidden_dims=[256, 256, 256],
+        activation="elu",
+        noise_std=0.001,
+    ):
         super().__init__()
 
         activation = get_activation(activation)

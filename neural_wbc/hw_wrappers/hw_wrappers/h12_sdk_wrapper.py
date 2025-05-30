@@ -24,9 +24,11 @@ from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowCmd_, LowState_
 from unitree_sdk2py.utils.crc import CRC
 from unitree_sdk2py.utils.thread import RecurrentThread
 
+
 class MotorMode:
     PR = 0  # Series Control for Pitch/Roll Joints
     AB = 1  # Parallel Control for A/B Joints
+
 
 class G1SDKWrapper:
     """This provides interface for unitree h1 robot."""
@@ -96,28 +98,32 @@ class G1SDKWrapper:
 
         print("Waiting for the robot to connect...")
         self.wait_for_low_state()
-        self.init_cmd_hg(self._low_cmd, self.mode_machine_, self.mode_pr_) # type: ignore
+        self.init_cmd_hg(self._low_cmd, self.mode_machine_, self.mode_pr_)  # type: ignore
 
     def wait_for_low_state(self):
         while not self._update_mode_machine:
             time.sleep(0.02)
         print("Successfully connected to the robot.")
-        
+
     def init_cmd_hg(self, cmd: LowCmd_, mode_machine: int, mode_pr: int):
         cmd.mode_machine = mode_machine
         cmd.mode_pr = mode_pr
-        import ipdb; ipdb.set_trace()
+        import ipdb
+
+        ipdb.set_trace()
 
         for i, motor_name in ({**self.cfg.motor_id_to_name, **self.cfg.wrist_motor_id_to_name}).items():
             print("motor_name: ", motor_name)
             print("i: ", i)
             cmd.motor_cmd[i].mode = 1
-            cmd.motor_cmd[i].q = 0.
-            cmd.motor_cmd[i].qd = 0.
-            cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name+"_joint"]
-            cmd.motor_cmd[i].kd = self.cfg.damping[motor_name+"_joint"]
-            cmd.motor_cmd[i].tau = 0.
-        import ipdb; ipdb.set_trace()
+            cmd.motor_cmd[i].q = 0.0
+            cmd.motor_cmd[i].qd = 0.0
+            cmd.motor_cmd[i].kp = self.cfg.stiffness[motor_name + "_joint"]
+            cmd.motor_cmd[i].kd = self.cfg.damping[motor_name + "_joint"]
+            cmd.motor_cmd[i].tau = 0.0
+        import ipdb
+
+        ipdb.set_trace()
 
     def _is_motor_enabled(self, motor_id: int) -> bool:
         """Check if a motor is enabled.
@@ -142,7 +148,12 @@ class G1SDKWrapper:
                 self._low_cmd.motor_cmd[motor_idx].dq = 0.0
                 self._low_cmd.motor_cmd[motor_idx].tau = 0.0
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
-            print("self._low_cmd: ", self._low_cmd.motor_cmd[12].q, self._low_cmd.motor_cmd[13].q, self._low_cmd.motor_cmd[14].q)
+            print(
+                "self._low_cmd: ",
+                self._low_cmd.motor_cmd[12].q,
+                self._low_cmd.motor_cmd[13].q,
+                self._low_cmd.motor_cmd[14].q,
+            )
             self._cmd_received = True
 
     def publish_joint_torque_cmd(self, cmd_joint_torques: np.ndarray):
@@ -162,9 +173,7 @@ class G1SDKWrapper:
             self._low_cmd.crc = self.crc.Crc(self._low_cmd)
             self._cmd_received = True
 
-
     def reset(self, desired_qpos: np.ndarray | None = None) -> None:
-
         """Resets the robot to the given joint positions.
 
         Args:
@@ -174,9 +183,9 @@ class G1SDKWrapper:
         self.time_ = 0.0
         self.control_dt_ = self.cfg.reset_step_dt
         self.duration_ = self.cfg.reset_duration
-        
-        # desired_joint_positions = np.array([ 
-        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0, 
+
+        # desired_joint_positions = np.array([
+        #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
         #                         -0.2,  0.0,  0.0,  0.5, -0.1, 0.0,
         #                         0.0, 0., 0.,
         #                         0, 0, 0, 0,
@@ -217,7 +226,6 @@ class G1SDKWrapper:
             self.publish_joint_position_cmd(target_joint_positions)
             time.sleep(self.control_dt_)
         print("\nReset complete.")
-
 
     @property
     def joint_positions(self) -> np.ndarray:

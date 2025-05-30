@@ -42,7 +42,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 
 from rsl_rl.algorithms import PPO
-from rsl_rl.modules import ActorCritic
+from rsl_rl.modules import ActorCritic, ActorCriticRecurrent, ActorCriticTransformer, RNNActorMLPCritic
 from rsl_rl.env import VecEnv
 
 
@@ -53,7 +53,6 @@ class OnPolicyRunner:
         self.cfg = train_cfg["runner"]
         self.alg_cfg = train_cfg["algorithm"]
         self.policy_cfg = train_cfg["policy"]
-
         self.device = device
         self.env = env
         if self.env.num_privileged_obs is not None:
@@ -61,25 +60,35 @@ class OnPolicyRunner:
         else:
             num_critic_obs = self.env.num_obs
         actor_critic_class = eval(self.cfg["policy_class_name"])  # ActorCritic
+        # actor_critic: ActorCritic = actor_critic_class(
+        #     self.env.num_obs, 
+        #     num_critic_obs, 
+        #     self.env.num_actions, **self.policy_cfg
+        # ).to(self.device)
 
-        actor_critic: ActorCritic = actor_critic_class(
-            self.env.num_obs, num_critic_obs, self.env.num_actions, **self.policy_cfg
+        # actor_critic: ActorCriticTransformer = actor_critic_class( 
+        #     self.env.num_obs,
+        #     num_critic_obs,
+        #     self.env.num_actions,
+        #     self.env.obs_context_len,
+        #     **self.policy_cfg
+        # ).to(self.device)
+
+        actor_critic: RNNActorMLPCritic = actor_critic_class( 
+            self.env.num_obs,
+            num_critic_obs,
+            self.env.num_actions,
+            **self.policy_cfg
         ).to(self.device)
 
         alg_class = eval(self.cfg["algorithm_class_name"])  # PPO
-
         self.alg: PPO = alg_class(actor_critic, device=self.device, **self.alg_cfg)
         self.num_steps_per_env = self.cfg["num_steps_per_env"]
         self.save_interval = self.cfg["save_interval"]
 
         # init storage and model
-        self.alg.init_storage(
-            self.env.num_envs,
-            self.num_steps_per_env,
-            [self.env.num_obs],
-            [self.env.num_privileged_obs],
-            [self.env.num_actions],
-        )
+        self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, [self.env.num_obs], [self.env.num_privileged_obs], [self.env.num_actions])
+        # self.alg.init_storage(self.env.num_envs, self.num_steps_per_env, [self.env.obs_context_len, self.env.num_obs], [self.env.num_privileged_obs], [self.env.num_actions])
 
         # Log
         self.log_dir = log_dir
@@ -95,9 +104,7 @@ class OnPolicyRunner:
         if self.log_dir is not None and self.writer is None:
             self.writer = SummaryWriter(log_dir=self.log_dir, flush_secs=10)
         if init_at_random_ep_len:
-            self.env.episode_length_buf = torch.randint_like(
-                self.env.episode_length_buf, high=int(self.env.max_episode_length)
-            )
+            self.env.episode_length_buf = torch.randint_like(self.env.episode_length_buf, high=int(self.env.max_episode_length))
         obs = self.env.get_observations()
         privileged_obs = self.env.get_privileged_observations()
         critic_obs = privileged_obs if privileged_obs is not None else obs
@@ -108,6 +115,7 @@ class OnPolicyRunner:
         rewbuffer = deque(maxlen=100)
         costbuffer = deque(maxlen=100)
         lenbuffer = deque(maxlen=100)
+        donebuffer = deque(maxlen=100)
         cur_reward_sum = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
         cur_cost_sum = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
         cur_episode_length = torch.zeros(self.env.num_envs, dtype=torch.float, device=self.device)
@@ -121,15 +129,8 @@ class OnPolicyRunner:
                     # import ipdb; ipdb.set_trace()
                     actions = self.alg.act(obs, critic_obs)
                     obs, privileged_obs, rewards, dones, infos = self.env.step(actions.detach())
-
                     critic_obs = privileged_obs if privileged_obs is not None else obs
-                    obs, critic_obs, rewards, dones = (
-                        obs.to(self.device),
-                        critic_obs.to(self.device),
-                        rewards.to(self.device),
-                        dones.to(self.device),
-                    )
-
+                    obs, critic_obs, rewards, dones = obs.to(self.device), critic_obs.to(self.device), rewards.to(self.device), dones.to(self.device)
                     self.alg.process_env_step(rewards, dones, infos)
 
                     if self.log_dir is not None:
@@ -142,6 +143,7 @@ class OnPolicyRunner:
                         rewbuffer.extend(cur_reward_sum[new_ids][:, 0].cpu().numpy().tolist())
                         costbuffer.extend(cur_cost_sum[new_ids][:, 0].cpu().numpy().tolist())
                         lenbuffer.extend(cur_episode_length[new_ids][:, 0].cpu().numpy().tolist())
+                        donebuffer.append(len(new_ids) / self.env.num_envs)
                         cur_reward_sum[new_ids] = 0
                         cur_cost_sum[new_ids] = 0
                         cur_episode_length[new_ids] = 0
@@ -153,9 +155,9 @@ class OnPolicyRunner:
                 start = stop
                 self.alg.compute_returns(critic_obs)
 
-            teleop_body_pos_upperbody_sigma = self.env.cfg.rewards.body_pos_upper_body_sigma
-            penalty_scale = self.env.unwrapped.penalty_scale
-            average_episode_length_for_reward_curriculum = self.env.unwrapped.average_episode_length
+            # teleop_body_pos_upperbody_sigma = self.env.cfg.rewards.body_pos_upper_body_sigma
+            # penalty_scale = self.env.unwrapped.penalty_scale
+            # average_episode_length_for_reward_curriculum = self.env.unwrapped.average_episode_length
 
             mean_value_loss, mean_surrogate_loss = self.alg.update(epoch=it)
             stop = time.time()
@@ -193,15 +195,13 @@ class OnPolicyRunner:
         mean_std = self.alg.actor_critic.std.mean()
         fps = int(self.num_steps_per_env * self.env.num_envs / (locs["collection_time"] + locs["learn_time"]))
 
-        self.writer.add_scalar(
-            "Episode/Average_episode_length_for_reward_curriculum",
-            locs["average_episode_length_for_reward_curriculum"],
-            locs["it"],
-        )
-        self.writer.add_scalar("Episode/Penalty_scale", locs["penalty_scale"], locs["it"])
-        self.writer.add_scalar(
-            "Episode/Teleop_body_pos_upperbody_sigma", locs["teleop_body_pos_upperbody_sigma"], locs["it"]
-        )
+        # self.writer.add_scalar(
+        #     "Episode/Average_episode_length_for_reward_curriculum",
+        #     locs["average_episode_length_for_reward_curriculum"],
+        #     locs["it"],
+        # )
+        # self.writer.add_scalar("Episode/Penalty_scale", locs["penalty_scale"], locs["it"])
+        # self.writer.add_scalar("Episode/Teleop_body_pos_upperbody_sigma", locs["teleop_body_pos_upperbody_sigma"], locs["it"])
 
         self.writer.add_scalar("Loss/value_function", locs["mean_value_loss"], locs["it"])
         self.writer.add_scalar("Loss/surrogate", locs["mean_surrogate_loss"], locs["it"])
@@ -233,9 +233,9 @@ class OnPolicyRunner:
                 f"""{'Mean reward:':>{pad}} {statistics.mean(locs['rewbuffer']):.2f}\n"""
                 f"""{'Mean cost:':>{pad}} {statistics.mean(locs['costbuffer']):.2f}\n"""
                 f"""{'Mean episode length:':>{pad}} {statistics.mean(locs['lenbuffer']):.2f}\n"""
-                f"""{'Average_episode_length_for_reward_curriculum:':>{pad}} {locs['average_episode_length_for_reward_curriculum']:.6f}\n"""
-                f"""{'Penalty_scale:':>{pad}} {locs['penalty_scale']:.6f}\n"""
-                f"""{'Teleop_body_pos_upperbody_sigma:':>{pad}} {locs['teleop_body_pos_upperbody_sigma']:.6f}\n"""
+                # f"""{'Average_episode_length_for_reward_curriculum:':>{pad}} {locs['average_episode_length_for_reward_curriculum']:.6f}\n"""
+                # f"""{'Penalty_scale:':>{pad}} {locs['penalty_scale']:.6f}\n"""
+                # f"""{'Teleop_body_pos_upperbody_sigma:':>{pad}} {locs['teleop_body_pos_upperbody_sigma']:.6f}\n"""
             )
         else:
             log_string = (
@@ -277,15 +277,12 @@ class OnPolicyRunner:
         return f"{hours:.0f}h, {minutes:.0f}m, {seconds:.1f}s"
 
     def save(self, path, infos=None):
-        torch.save(
-            {
+        torch.save({
                 "model_state_dict": self.alg.actor_critic.state_dict(),
                 "optimizer_state_dict": self.alg.optimizer.state_dict(),
                 "iter": self.current_learning_iteration,
                 "infos": infos,
-            },
-            path,
-        )
+                },path)
 
     def load(self, path, load_optimizer=True):
         loaded_dict = torch.load(path, map_location=self.device)

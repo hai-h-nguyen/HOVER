@@ -39,6 +39,12 @@ if TYPE_CHECKING:
     from ..neural_env import NeuralWBCEnv
 
 
+@torch.jit.script
+def torch_rand_float(lower, upper, shape, device):
+    # type: (float, float, Tuple[int, int], str) -> Tensor
+    return (upper - lower) * torch.rand(*shape, device=device) + lower
+
+
 def randomize_body_com(
     env: NeuralWBCEnv,
     env_ids: torch.Tensor | None,
@@ -364,6 +370,77 @@ def reset_robot_state_and_motion(
         root_states[:, 7:10] = ref_motion_state.root_lin_vel[env_ids]
         root_states[:, 10:13] = ref_motion_state.root_ang_vel[env_ids]
 
+    state = root_states[:, :7]
+    velocities = root_states[:, 7:13]
+    asset.write_root_pose_to_sim(state, env_ids=env_ids)
+    asset.write_root_velocity_to_sim(velocities, env_ids=env_ids)
+
+    # torso_quat = asset.data.body_quat_w[env_ids, 10]
+    # pelvis_quat = asset.data.body_quat_w[env_ids, 0]
+
+    # from scipy.spatial.transform import Rotation as R
+    # def compute_projected_gravity(quat, device):
+    #     # Create rotation matrix from quaternion
+    #     rot_mat_np = R.from_quat(quat.detach().cpu().numpy(), scalar_first=True).as_matrix()
+    #     torso_rot_mat = torch.tensor(rot_mat_np, device=device, dtype=torch.float32)
+
+    #     # World gravity vector (normalized)
+    #     world_gravity = torch.tensor([0.0, 0.0, -1.0], device=device, dtype=torch.float32)
+
+    #     # Transform gravity to base frame
+    #     base_gravity = torso_rot_mat.T @ world_gravity
+    #     return base_gravity.unsqueeze(0)
+
+    # for i in range(len(env_ids)):
+    #     # Compute the projected gravity for each environment
+    #     torso_projected_gravity = compute_projected_gravity(torso_quat[i], env.device)
+    #     pelvis_projectetd_gravity = compute_projected_gravity(pelvis_quat[i], env.device)
+    #     ref_projected_gravity = asset.data.projected_gravity_b[env_ids[i]]
+    #     print("Difference in projected gravity (torso):", torch.norm(torso_projected_gravity - ref_projected_gravity))
+    #     print("Difference in projected gravity (pelvis):", torch.norm(pelvis_projectetd_gravity - ref_projected_gravity))
+    #     print("="*100)
+    # import ipdb; ipdb.set_trace()
+
+
+def reset_robot_state(
+    env: NeuralWBCEnv,
+    env_ids: torch.Tensor,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+):
+    """Reset the robot and reference motion.
+
+    The full reset percess is:
+    1. Reset the robot root state to the origin position of its terrain.
+    2. Reset motion reference to random time step.
+    3. Moving the motion reference trajectory to the current robot position.
+    4. Reset the robot joint to reference motion's joint states
+    5. Reset the robot root state to the reference motion's root state.
+    """
+    # extract the used quantities (to enable type-hinting)
+    asset: RigidObject | Articulation = env.scene[asset_cfg.name]
+    # get default root state
+    root_states = asset.data.default_root_state[env_ids].clone()
+
+    root_states[:, :3] += env._terrain.env_origins[env_ids]
+    root_states[:, :2] += torch_rand_float(
+        -1.0, 1.0, (len(env_ids), 2), device=env.device
+    )  # xy position within 1m of the center
+
+    root_states[:, 7:13] = torch_rand_float(
+        -0.5, 0.5, (len(env_ids), 6), device=env.device
+    )  # [7:10]: lin vel, [10:13]: ang vel
+    state = root_states[:, :7]
+    asset.write_root_pose_to_sim(state, env_ids=env_ids)
+
+    mdp.reset_joints_by_scale(env, env_ids, (1.0, 1.0), (0.0, 0.0), asset_cfg)
+
+    joint_pos = asset.data.default_joint_pos[env_ids] * torch_rand_float(
+        0.5, 1.5, (len(env_ids), 21), device=env.device
+    )
+    joint_vel = 0.0
+    asset.write_joint_state_to_sim(joint_pos, joint_vel, env._joint_ids, env_ids=env_ids)
+
+    root_states[:, 2] += 0.04  # in case under the terrain
     state = root_states[:, :7]
     velocities = root_states[:, 7:13]
     asset.write_root_pose_to_sim(state, env_ids=env_ids)

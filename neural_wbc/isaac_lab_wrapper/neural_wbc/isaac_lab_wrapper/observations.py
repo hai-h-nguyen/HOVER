@@ -27,7 +27,11 @@ if TYPE_CHECKING:
 
 from neural_wbc.core import ReferenceMotionState
 from neural_wbc.core.body_state import BodyState
-from neural_wbc.core.observations import compute_student_observations, compute_teacher_observations, compute_delta_action_observations
+from neural_wbc.core.observations import (
+    compute_delta_action_observations,
+    compute_student_observations,
+    compute_teacher_observations,
+)
 
 
 def compute_observations(
@@ -49,7 +53,7 @@ def compute_observations(
             history=env.history.entries,
             mask=env.mask,
             ref_episodic_offset=env.ref_episodic_offset,
-            recorded_actions=env._get_recorded_data(torch.arange(env.num_envs))["action"]
+            recorded_actions=env._get_recorded_data(torch.arange(env.num_envs))["action"],
         )
         obs_dict.update(delta_action_obs_dict)
         obs_dict["delta_action_policy"] = delta_action_obs
@@ -58,7 +62,7 @@ def compute_observations(
         privileged_obs, privileged_obs_dict = compute_privileged_observations(env=env, asset=asset)
         obs_dict.update(privileged_obs_dict)
         obs_dict["critic"] = torch.cat([delta_action_obs, privileged_obs], dim=1)
-        
+
     else:
         # First collect teacher policy observations.
         teacher_obs, teacher_obs_dict = compute_teacher_observations(

@@ -14,20 +14,22 @@
 # limitations under the License.
 from __future__ import annotations
 
+import gc
 import json
+import math
 import numpy as np
 import time
 import torch
 from dataclasses import dataclass, field
+from matplotlib import pyplot as plt
 from pathlib import Path
 from tqdm import tqdm
 
 from phc.smpllib.smpl_eval import compute_metrics_lite
-from neural_wbc.core.util import Filter
+
 from neural_wbc.core import EnvironmentWrapper, math_utils
-import math
-from matplotlib import pyplot as plt
-import gc
+from neural_wbc.core.util import Filter
+
 
 @dataclass
 class Frame:
@@ -547,7 +549,7 @@ class Evaluator:
         self._pbar = tqdm(range(self._num_unique_ref_motions // self._num_envs), position=0, leave=True)
         self._curr_steps = 0
         self._num_episodes = 0
-        
+
         self._process_action = None
         self.joint_filter = None
         self._joint_vel = None
@@ -607,22 +609,28 @@ class Evaluator:
         self.lower_body_joint_ids = info["data"]["lower_joint_ids"]
         try:
             if self.joint_filter is None:
-                self.joint_filter = self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[np.newaxis, ...]
+                self.joint_filter = self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[
+                    np.newaxis, ...
+                ]
             else:
-                self.joint_filter = np.concatenate([self.joint_filter, self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[np.newaxis, ...]], axis=0)
+                self.joint_filter = np.concatenate(
+                    [
+                        self.joint_filter,
+                        self.filter.dt1_filter(state_data["joint_pos"].squeeze(0).detach().cpu().numpy())[
+                            np.newaxis, ...
+                        ],
+                    ],
+                    axis=0,
+                )
         except:
             pass
 
-        frame = self._build_frame(state_data, 
-                                  body_mask_expanded, 
-                                  num_envs, 
-                                  self.upper_body_joint_ids, 
-                                  self.lower_body_joint_ids)
-        frame_gt = self._build_frame(ground_truth_data, 
-                                     body_mask_expanded, 
-                                     num_envs, 
-                                     self.upper_body_joint_ids, 
-                                     self.lower_body_joint_ids)
+        frame = self._build_frame(
+            state_data, body_mask_expanded, num_envs, self.upper_body_joint_ids, self.lower_body_joint_ids
+        )
+        frame_gt = self._build_frame(
+            ground_truth_data, body_mask_expanded, num_envs, self.upper_body_joint_ids, self.lower_body_joint_ids
+        )
 
         self._update_failure_metrics(newly_terminated, info)
         self._episode.add_frame(frame)
@@ -646,9 +654,8 @@ class Evaluator:
             else:
                 self._joint_vel = torch.cat((self._joint_vel, state_data.pop("joint_vel")), dim=0)
         except:
-            pass 
+            pass
 
-    
     def visualize(self, dt):
         upper_joint_pos_gt = self._episode_gt.upper_body_joint_pos[0].detach().cpu().numpy()
         lower_joint_pos_gt = self._episode_gt.lower_body_joint_pos[0].detach().cpu().numpy()
@@ -658,7 +665,7 @@ class Evaluator:
         lower_joint_pos = self._episode.lower_body_joint_pos[0].detach().cpu().numpy()
         root_lin_vel = self._episode.root_lin_vel[0].detach().cpu().numpy()
         self._joint_vel = self._joint_vel.detach().cpu().numpy()
-        
+
         num_joints = len(self.upper_body_joint_ids) + len(self.lower_body_joint_ids)
         _num_frames = upper_joint_pos.shape[0]
 
@@ -682,49 +689,55 @@ class Evaluator:
                 a.plot(time, lower_joint_pos_gt[:, sub_index], label="target")
             # a.axhline(y=self._lower_pos_limit[:, joint_index].item(), color='r', linestyle='--')
             # a.axhline(y=self._upper_pos_limit[:, joint_index].item(), color='r', linestyle='--')
-            a.set(xlabel='time [s]', ylabel='Position [rad]', title=f'DOF Position {joint_index}')
+            a.set(xlabel="time [s]", ylabel="Position [rad]", title=f"DOF Position {joint_index}")
             # a.legend()
 
             row = (i + 1) // nb_rows
             col = (i + 1) % nb_cols
             a = axs[row, col]
-            a.plot(time, self._joint_vel[:, joint_index], label='measured')
-            a.plot(time, self.joint_filter[:, joint_index], label='filtered')
-            a.set(xlabel='time [s]', ylabel='Velocity [rad/s]', title=f'Joint velocity {joint_index}')
+            a.plot(time, self._joint_vel[:, joint_index], label="measured")
+            a.plot(time, self.joint_filter[:, joint_index], label="filtered")
+            a.set(xlabel="time [s]", ylabel="Velocity [rad/s]", title=f"Joint velocity {joint_index}")
             # a.legend()
 
             row = (i + 2) // nb_rows
             col = (i + 2) % nb_cols
             a = axs[row, col]
-            a.plot(time, self._process_action[:, joint_index].detach().cpu().numpy(), label='measured')
-            a.axhline(y=self._torques_limit[:, joint_index].item(), color='r', linestyle='--')
-            a.axhline(y=-self._torques_limit[:, joint_index].item(), color='r', linestyle='--')
-            a.set(xlabel='time [s]', ylabel='F/T', title=f'F/T of joint {joint_index}')
-            a.set_yticks(np.arange(-self._torques_limit[:, joint_index].item(), self._torques_limit[:, joint_index].item(), int(2 * self._torques_limit[:, joint_index].item() / 4)))  # Set y-ticks here
+            a.plot(time, self._process_action[:, joint_index].detach().cpu().numpy(), label="measured")
+            a.axhline(y=self._torques_limit[:, joint_index].item(), color="r", linestyle="--")
+            a.axhline(y=-self._torques_limit[:, joint_index].item(), color="r", linestyle="--")
+            a.set(xlabel="time [s]", ylabel="F/T", title=f"F/T of joint {joint_index}")
+            a.set_yticks(
+                np.arange(
+                    -self._torques_limit[:, joint_index].item(),
+                    self._torques_limit[:, joint_index].item(),
+                    int(2 * self._torques_limit[:, joint_index].item() / 4),
+                )
+            )  # Set y-ticks here
             # a.legend()
-        
+
         row = (num_joints * num_plot_for_each_joint) // nb_rows
         col = (num_joints * num_plot_for_each_joint) % nb_cols
         a = axs[row, col]
-        a.plot(time, root_lin_vel[:, 0], label='measured')
-        a.plot(time, root_lin_vel_gt[:, 0], label='target')
-        a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity x')
+        a.plot(time, root_lin_vel[:, 0], label="measured")
+        a.plot(time, root_lin_vel_gt[:, 0], label="target")
+        a.set(xlabel="time [s]", ylabel="Base lin vel [m/s]", title=f"Base velocity x")
         a.legend()
 
         row = (num_joints * num_plot_for_each_joint + 1) // nb_rows
         col = (num_joints * num_plot_for_each_joint + 1) % nb_cols
         a = axs[row, col]
-        a.plot(time, root_lin_vel[:, 1], label='measured')
-        a.plot(time, root_lin_vel_gt[:, 1], label='target')
-        a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity y')
+        a.plot(time, root_lin_vel[:, 1], label="measured")
+        a.plot(time, root_lin_vel_gt[:, 1], label="target")
+        a.set(xlabel="time [s]", ylabel="Base lin vel [m/s]", title=f"Base velocity y")
         a.legend()
 
         row = (num_joints * num_plot_for_each_joint + 2) // nb_rows
         col = (num_joints * num_plot_for_each_joint + 2) % nb_cols
         a = axs[row, col]
-        a.plot(time, root_lin_vel[:, 2], label='measured')
-        a.plot(time, root_lin_vel_gt[:, 2], label='target')
-        a.set(xlabel='time [s]', ylabel='Base lin vel [m/s]', title=f'Base velocity z')
+        a.plot(time, root_lin_vel[:, 2], label="measured")
+        a.plot(time, root_lin_vel_gt[:, 2], label="target")
+        a.set(xlabel="time [s]", ylabel="Base lin vel [m/s]", title=f"Base velocity z")
         a.legend()
 
         plt.subplots_adjust(wspace=0.5, hspace=1.0)
@@ -759,7 +772,7 @@ class Evaluator:
         new_data["root_lin_vel"] = data["root_lin_vel"]
         new_data["root_rot"] = data["root_rot"]
         return Frame.from_dict(new_data)
-    
+
     def _update_failure_metrics(self, newly_terminated: torch.Tensor, info: dict):
         """Updates failure metrics based on termination conditions."""
         start_id = self._ref_motion_start_id
